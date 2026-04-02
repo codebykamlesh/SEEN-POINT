@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign in to SEEN POINT and start streaming movies and TV shows.">
+    <title>Sign In — SEEN POINT</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <!-- Background cinematic overlay -->
+    <div style="position:fixed;inset:0;background:radial-gradient(ellipse at 30% 60%, rgba(0,212,255,0.12), transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(0,100,180,0.08), transparent 40%), var(--clr-bg);z-index:-1"></div>
+    
+    <!-- Floating movie posters background (aesthetic) -->
+    <div id="bg-posters" style="position:fixed;inset:0;z-index:-1;overflow:hidden;opacity:0.06;filter:blur(2px);display:grid;grid-template-columns:repeat(auto-fill,120px);gap:4px;transform:rotate(-5deg) scale(1.1)"></div>
+
+    <div class="auth-page">
+        <div class="auth-card page-enter">
+            <a href="/index.html" class="auth-logo">SEEN POINT</a>
+            
+            <h1 class="auth-title">Welcome back</h1>
+            <p class="auth-subtitle">Sign in to continue watching</p>
+
+            <div id="error-banner" class="hidden" style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);color:var(--clr-error);font-size:0.875rem;margin-bottom:var(--space-md)"></div>
+
+            <form id="login-form" novalidate>
+                <div class="form-group">
+                    <label class="form-label" for="email">Email address</label>
+                    <input 
+                        class="form-input" id="email" type="email" 
+                        placeholder="yourname@example.com" 
+                        autocomplete="email" required>
+                    <p class="form-error hidden" id="email-error"></p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password" style="display:flex;justify-content:space-between">
+                        Password
+                        <a href="#" class="auth-link" style="font-weight:400;font-size:0.8rem">Forgot password?</a>
+                    </label>
+                    <div style="position:relative">
+                        <input 
+                            class="form-input" id="password" type="password" 
+                            placeholder="Enter your password" 
+                            autocomplete="current-password" required>
+                        <button type="button" id="toggle-pw" 
+                                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--clr-text-muted);font-size:0.8rem">
+                            Show
+                        </button>
+                    </div>
+                    <p class="form-error hidden" id="pw-error"></p>
+                </div>
+
+                <button class="btn btn-primary" type="submit" id="submit-btn" 
+                        style="width:100%;padding:14px;font-size:1rem;margin-top:var(--space-sm)">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Demo accounts -->
+            <div style="margin-top:var(--space-lg);padding:var(--space-md);background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);border-radius:var(--radius-md)">
+                <p style="font-size:0.8rem;color:var(--clr-text-muted);margin-bottom:var(--space-sm);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Demo Accounts</p>
+                <div style="display:grid;gap:var(--space-xs)">
+                    <button class="demo-fill-btn" data-email="admin@seenpoint.com" data-pw="Admin@123"
+                            style="display:flex;align-items:center;gap:var(--space-sm);padding:8px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:var(--radius-sm);cursor:pointer;transition:background 0.2s;text-align:left">
+                        <span style="font-size:1.2rem">⚙️</span>
+                        <div>
+                            <div style="font-size:0.8rem;font-weight:600;color:var(--clr-white)">Admin</div>
+                            <div style="font-size:0.7rem;color:var(--clr-text-muted)">admin@seenpoint.com · Admin@123</div>
+                        </div>
+                    </button>
+                    <button class="demo-fill-btn" data-email="alice@example.com" data-pw="password"
+                            style="display:flex;align-items:center;gap:var(--space-sm);padding:8px;background:rgba(255,255,255,0.04);border:1px solid var(--clr-border);border-radius:var(--radius-sm);cursor:pointer;transition:background 0.2s;text-align:left">
+                        <span style="font-size:1.2rem">👤</span>
+                        <div>
+                            <div style="font-size:0.8rem;font-weight:600;color:var(--clr-white)">Alice (Premium)</div>
+                            <div style="font-size:0.7rem;color:var(--clr-text-muted)">alice@example.com · password</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <p style="text-align:center;margin-top:var(--space-lg);font-size:0.9rem;color:var(--clr-text-muted)">
+                New to SEEN POINT? <a href="/pages/register.html" class="auth-link">Create an account</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script>
+    // Redirect if already logged in
+    if (auth.isLoggedIn()) window.location.href = '/index.html';
+
+    // Password toggle
+    document.getElementById('toggle-pw').addEventListener('click', () => {
+        const pw = document.getElementById('password');
+        const btn = document.getElementById('toggle-pw');
+        if (pw.type === 'password') { pw.type = 'text'; btn.textContent = 'Hide'; }
+        else { pw.type = 'password'; btn.textContent = 'Show'; }
+    });
+
+    // Demo fill buttons
+    document.querySelectorAll('.demo-fill-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('email').value = btn.dataset.email;
+            document.getElementById('password').value = btn.dataset.pw;
+        });
+        btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(255,255,255,0.08)');
+        btn.addEventListener('mouseleave', () => btn.style.background = btn.dataset.email.includes('admin') ? 'rgba(0,212,255,0.08)' : 'rgba(255,255,255,0.04)');
+    });
+
+    // Form submit
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email    = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const submitBtn = document.getElementById('submit-btn');
+        const errorBanner = document.getElementById('error-banner');
+
+        // Basic validation
+        let valid = true;
+        if (!email) {
+            document.getElementById('email-error').textContent = 'Email is required';
+            document.getElementById('email-error').classList.remove('hidden');
+            valid = false;
+        }
+        if (!password) {
+            document.getElementById('pw-error').textContent = 'Password is required';
+            document.getElementById('pw-error').classList.remove('hidden');
+            valid = false;
+        }
+        if (!valid) return;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div> Signing in...';
+        errorBanner.classList.add('hidden');
+
+        try {
+            const { token, user } = await api.post('/auth/login', { email, password });
+            auth.save(token, user);
+
+            // Load first profile
+            try {
+                const { profiles } = await api.get('/auth/profiles');
+                if (profiles && profiles.length > 0) {
+                    auth.saveProfile(profiles[0]);
+                }
+            } catch { /* profile optional */ }
+
+            utils.toast('Welcome back, ' + user.fullName.split(' ')[0] + '! 🎬', 'success');
+            setTimeout(() => window.location.href = '/index.html', 800);
+        } catch (err) {
+            errorBanner.textContent = err.message || 'Login failed. Please check your credentials.';
+            errorBanner.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Sign In';
+        }
+    });
+
+    // Clear errors on input
+    ['email', 'password'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            document.getElementById(id + '-error')?.classList.add('hidden');
+        });
+    });
+    </script>
+</body>
+</html>

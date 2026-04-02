@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SEEN POINT — Your profile and account settings">
+    <title>My Profile — SEEN POINT</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        main { padding-top: calc(var(--navbar-h) + 40px); min-height: 100vh; }
+        .profile-layout {
+            max-width: 900px; margin: 0 auto; padding: 0 var(--space-xl) var(--space-xxl);
+            display: grid; grid-template-columns: 280px 1fr; gap: var(--space-xl);
+        }
+        @media (max-width: 720px) { .profile-layout { grid-template-columns: 1fr; } }
+
+        /* Sidebar */
+        .profile-sidebar {
+            display: flex; flex-direction: column; align-items: center; gap: var(--space-md);
+        }
+        .avatar-wrap {
+            position: relative; width: 120px; height: 120px;
+            border-radius: 50%; overflow: hidden;
+            border: 3px solid var(--clr-primary); cursor: pointer;
+        }
+        .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-edit-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.2s; font-size: 0.75rem; color: #fff;
+        }
+        .avatar-wrap:hover .avatar-edit-overlay { opacity: 1; }
+        .profile-name-display { font-size: 1.3rem; font-weight: 700; color: var(--clr-white); }
+        .profile-email-display { font-size: 0.85rem; color: var(--clr-text-muted); }
+        .profile-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3);
+            color: #00d4ff; font-size: 0.8rem; font-weight: 600;
+            padding: 4px 12px; border-radius: var(--radius-full);
+        }
+        .side-nav { width: 100%; margin-top: var(--space-md); }
+        .side-nav-item {
+            display: flex; align-items: center; gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md);
+            color: var(--clr-text-muted); font-size: 0.9rem; cursor: pointer;
+            transition: all var(--transition);
+        }
+        .side-nav-item:hover { background: rgba(255,255,255,0.05); color: var(--clr-white); }
+        .side-nav-item.active { background: rgba(0,212,255,0.1); color: #00d4ff; font-weight: 600; }
+
+        /* Content Panels */
+        .profile-panel { display: none; }
+        .profile-panel.active { display: block; }
+        .panel-title { font-size: 1.5rem; font-weight: 700; color: var(--clr-white); margin-bottom: var(--space-xl); }
+
+        .form-group { margin-bottom: var(--space-md); }
+        .form-group label { display: block; font-size: 0.85rem; color: var(--clr-text-muted); margin-bottom: 6px; }
+        .form-input {
+            width: 100%; padding: 12px 16px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md); color: var(--clr-white); font-size: 0.95rem;
+            outline: none; transition: border-color var(--transition), background var(--transition);
+        }
+        .form-input:focus { border-color: #00d4ff; background: rgba(0,212,255,0.04); }
+        .form-input::placeholder { color: var(--clr-text-dim); }
+
+        .pw-strength { height: 4px; border-radius: 2px; margin-top: 6px; transition: width 0.3s, background 0.3s; }
+        .pw-hint { font-size: 0.75rem; color: var(--clr-text-muted); margin-top: 4px; }
+
+        .save-btn {
+            background: #00d4ff; color: #000; border: none; padding: 12px 32px;
+            border-radius: var(--radius-md); font-weight: 700; cursor: pointer;
+            font-size: 0.95rem; transition: opacity 0.2s;
+        }
+        .save-btn:hover { opacity: 0.85; }
+        .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Watch History */
+        .history-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-md);
+        }
+        .history-card {
+            border-radius: var(--radius-md); overflow: hidden; cursor: pointer;
+            transition: transform var(--transition);
+        }
+        .history-card:hover { transform: translateY(-4px); }
+        .history-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
+        .history-card-info { padding: 6px 0; }
+        .history-card-title { font-size: 0.8rem; font-weight: 600; color: var(--clr-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .history-progress { height: 3px; background: rgba(255,255,255,0.15); border-radius: 1px; margin-top: 4px; }
+        .history-progress-fill { height: 100%; background: #00d4ff; border-radius: 1px; }
+
+        /* Playback settings */
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: var(--space-md) 0; border-bottom: 1px solid var(--clr-border);
+        }
+        .setting-label { font-size: 0.95rem; color: var(--clr-text); }
+        .setting-desc { font-size: 0.8rem; color: var(--clr-text-muted); margin-top: 2px; }
+        .toggle-sw {
+            position: relative; width: 48px; height: 26px; cursor: pointer;
+        }
+        .toggle-sw input { opacity: 0; width: 0; height: 0; }
+        .toggle-track {
+            position: absolute; inset: 0; background: rgba(255,255,255,0.1);
+            border-radius: 13px; transition: background 0.2s;
+        }
+        .toggle-sw input:checked ~ .toggle-track { background: #00d4ff; }
+        .toggle-thumb {
+            position: absolute; width: 20px; height: 20px; top: 3px; left: 3px;
+            background: #fff; border-radius: 50%; transition: transform 0.2s;
+        }
+        .toggle-sw input:checked ~ .toggle-thumb { transform: translateX(22px); }
+
+        .select-input {
+            padding: 8px 12px; background: rgba(255,255,255,0.05);
+            border: 1px solid var(--clr-border); border-radius: var(--radius-sm);
+            color: var(--clr-white); outline: none; font-size: 0.875rem;
+        }
+        .select-input option { background: var(--clr-bg-2); }
+    </style>
+</head>
+<body>
+    <!-- Toast container -->
+    <div id="toast-container" style="position:fixed;top:80px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar scrolled" id="navbar">
+        <a href="/index.html" class="navbar-logo">SEEN POINT</a>
+        <ul class="navbar-nav">
+            <li><a href="/index.html" class="nav-link">Home</a></li>
+            <li><a href="/pages/browse.html" class="nav-link">Browse</a></li>
+            <li><a href="/pages/watchlist.html" class="nav-link">My List</a></li>
+        </ul>
+        <div class="navbar-actions">
+            <a href="/pages/login.html" class="btn btn-primary btn-sm" id="login-link" style="display:none">Sign In</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="profile-layout" id="profile-layout" style="display:none">
+            <!-- Sidebar -->
+            <aside class="profile-sidebar">
+                <div class="avatar-wrap" onclick="document.getElementById('avatar-input').click()">
+                    <img id="avatar-img" src="https://api.dicebear.com/7.x/avataaars/svg?seed=default" alt="Avatar">
+                    <div class="avatar-edit-overlay">✏️ Change</div>
+                </div>
+                <input type="file" id="avatar-input" accept="image/*" style="display:none">
+                <div class="profile-name-display" id="display-name">Loading...</div>
+                <div class="profile-email-display" id="display-email"></div>
+                <div class="profile-badge" id="plan-badge">🎬 Free</div>
+
+                <nav class="side-nav">
+                    <div class="side-nav-item active" onclick="showPanel('info')" id="nav-info">👤 Account Info</div>
+                    <div class="side-nav-item" onclick="showPanel('password')" id="nav-password">🔒 Change Password</div>
+                    <div class="side-nav-item" onclick="showPanel('history')" id="nav-history">📺 Watch History</div>
+                    <div class="side-nav-item" onclick="showPanel('settings')" id="nav-settings">⚙️ Playback Settings</div>
+                    <div class="side-nav-item" onclick="auth.logout()" style="color:var(--clr-error);margin-top:16px">🚪 Sign Out</div>
+                </nav>
+            </aside>
+
+            <!-- Panels -->
+            <div>
+                <!-- Account Info -->
+                <div class="profile-panel active" id="panel-info">
+                    <h2 class="panel-title">Account Information</h2>
+                    <div class="form-group">
+                        <label for="inp-fullname">Full Name</label>
+                        <input class="form-input" type="text" id="inp-fullname" placeholder="Your full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="inp-email">Email Address</label>
+                        <input class="form-input" type="email" id="inp-email" placeholder="your@email.com" readonly style="opacity:0.6;cursor:not-allowed">
+                    </div>
+                    <button class="save-btn" id="save-info-btn" onclick="saveProfile()">Save Changes</button>
+                </div>
+
+                <!-- Change Password -->
+                <div class="profile-panel" id="panel-password">
+                    <h2 class="panel-title">Change Password</h2>
+                    <div class="form-group">
+                        <label for="inp-current-pw">Current Password</label>
+                        <input class="form-input" type="password" id="inp-current-pw" placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label for="inp-new-pw">New Password</label>
+                        <input class="form-input" type="password" id="inp-new-pw" placeholder="Min. 8 characters" oninput="checkPwStrength(this.value)">
+                        <div class="pw-strength" id="pw-strength-bar" style="width:0%;background:#ff4444"></div>
+                        <div class="pw-hint" id="pw-strength-label"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="inp-confirm-pw">Confirm New Password</label>
+                        <input class="form-input" type="password" id="inp-confirm-pw" placeholder="Repeat new password">
+                    </div>
+                    <button class="save-btn" onclick="changePassword()">Update Password</button>
+                </div>
+
+                <!-- Watch History -->
+                <div class="profile-panel" id="panel-history">
+                    <h2 class="panel-title">Watch History</h2>
+                    <div class="history-grid" id="history-grid">
+                        <p style="color:var(--clr-text-muted);grid-column:1/-1">No watch history yet. Start watching!</p>
+                    </div>
+                </div>
+
+                <!-- Playback Settings -->
+                <div class="profile-panel" id="panel-settings">
+                    <h2 class="panel-title">Playback Settings</h2>
+                    <div class="setting-row">
+                        <div>
+                            <div class="setting-label">Autoplay Next Episode</div>
+                            <div class="setting-desc">Automatically play the next episode in a series</div>
+                        </div>
+                        <label class="toggle-sw">
+                            <input type="checkbox" id="set-autoplay" checked onchange="saveSetting('autoplay', this.checked)">
+                            <span class="toggle-track"></span>
+                            <span class="toggle-thumb"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <div class="setting-label">Default Quality</div>
+                            <div class="setting-desc">Preferred video quality when available</div>
+                        </div>
+                        <select class="select-input" id="set-quality" onchange="saveSetting('quality', this.value)">
+                            <option value="auto">Auto</option>
+                            <option value="1080p">1080p</option>
+                            <option value="720p">720p</option>
+                            <option value="480p">480p</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <div class="setting-label">Default Subtitle Language</div>
+                            <div class="setting-desc">Show subtitles by default</div>
+                        </div>
+                        <select class="select-input" id="set-subs" onchange="saveSetting('subtitles', this.value)">
+                            <option value="off">Off</option>
+                            <option value="en">English</option>
+                            <option value="hi">Hindi</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <div class="setting-label">Playback Speed</div>
+                            <div class="setting-desc">Default playback speed</div>
+                        </div>
+                        <select class="select-input" id="set-speed" onchange="saveSetting('speed', this.value)">
+                            <option value="1">1x (Normal)</option>
+                            <option value="1.25">1.25x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="0.75">0.75x</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Not logged in -->
+        <div id="not-logged-in" style="display:none;text-align:center;padding:80px 20px">
+            <p style="font-size:1.2rem;color:var(--clr-text-muted);margin-bottom:24px">Please sign in to view your profile</p>
+            <a href="/pages/login.html" class="btn btn-primary">Sign In</a>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script>
+    (async () => {
+        const user = auth.getUser();
+        if (!user) {
+            document.getElementById('not-logged-in').style.display = 'block';
+            document.getElementById('login-link').style.display = 'block';
+            return;
+        }
+
+        document.getElementById('profile-layout').style.display = 'grid';
+
+        // Load profile data
+        try {
+            const res = await api.get('/auth/me');
+            const u = res.user;
+            document.getElementById('display-name').textContent = u.full_name || user.fullName;
+            document.getElementById('display-email').textContent = u.email;
+            document.getElementById('inp-fullname').value = u.full_name || '';
+            document.getElementById('inp-email').value = u.email || '';
+            document.getElementById('plan-badge').textContent = `🎬 ${u.plan_name || 'Free'}`;
+            document.getElementById('avatar-img').src = u.profiles?.[0]?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`;
+        } catch(e) {
+            document.getElementById('display-name').textContent = user.fullName || 'User';
+            document.getElementById('display-email').textContent = user.email || '';
+            document.getElementById('inp-fullname').value = user.fullName || '';
+            document.getElementById('inp-email').value = user.email || '';
+        }
+
+        // Load saved settings
+        const settings = JSON.parse(localStorage.getItem('sp_settings') || '{}');
+        if (settings.autoplay !== undefined) document.getElementById('set-autoplay').checked = settings.autoplay;
+        if (settings.quality) document.getElementById('set-quality').value = settings.quality;
+        if (settings.subtitles) document.getElementById('set-subs').value = settings.subtitles;
+        if (settings.speed) document.getElementById('set-speed').value = settings.speed;
+
+        // Load watch history
+        loadWatchHistory();
+
+        // Panel navigation
+        window.showPanel = (panel) => {
+            document.querySelectorAll('.profile-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.side-nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(`panel-${panel}`).classList.add('active');
+            document.getElementById(`nav-${panel}`).classList.add('active');
+            if (panel === 'history') loadWatchHistory();
+        };
+
+        window.saveProfile = async () => {
+            const btn = document.getElementById('save-info-btn');
+            btn.disabled = true; btn.textContent = 'Saving...';
+            const fullName = document.getElementById('inp-fullname').value.trim();
+            if (!fullName) { utils.toast('Name cannot be empty', 'error'); btn.disabled = false; btn.textContent = 'Save Changes'; return; }
+            try {
+                await api.put('/user/profile', { fullName });
+                const u = auth.getUser();
+                if (u) { u.fullName = fullName; auth.save(auth.getToken(), u); }
+                document.getElementById('display-name').textContent = fullName;
+                utils.toast('Profile updated!', 'success');
+            } catch(e) {
+                utils.toast(e.message || 'Failed to update', 'error');
+            }
+            btn.disabled = false; btn.textContent = 'Save Changes';
+        };
+
+        window.changePassword = async () => {
+            const cur = document.getElementById('inp-current-pw').value;
+            const nw = document.getElementById('inp-new-pw').value;
+            const conf = document.getElementById('inp-confirm-pw').value;
+            if (!cur || !nw || !conf) { utils.toast('All fields are required', 'error'); return; }
+            if (nw !== conf) { utils.toast('Passwords do not match', 'error'); return; }
+            if (nw.length < 8) { utils.toast('Password must be at least 8 characters', 'error'); return; }
+            try {
+                await api.post('/user/change-password', { currentPassword: cur, newPassword: nw });
+                utils.toast('Password updated successfully!', 'success');
+                document.getElementById('inp-current-pw').value = '';
+                document.getElementById('inp-new-pw').value = '';
+                document.getElementById('inp-confirm-pw').value = '';
+            } catch(e) {
+                utils.toast(e.message || 'Failed to change password', 'error');
+            }
+        };
+
+        window.checkPwStrength = (pw) => {
+            const bar = document.getElementById('pw-strength-bar');
+            const label = document.getElementById('pw-strength-label');
+            let score = 0;
+            if (pw.length >= 8) score++;
+            if (/[A-Z]/.test(pw)) score++;
+            if (/[0-9]/.test(pw)) score++;
+            if (/[^a-zA-Z0-9]/.test(pw)) score++;
+            const pct = (score / 4) * 100;
+            const colors = ['#ff4444', '#ff8800', '#f5c518', '#46d369'];
+            const labels = ['Too weak', 'Weak', 'Good', 'Strong'];
+            bar.style.width = pct + '%';
+            bar.style.background = colors[score - 1] || '#ff4444';
+            label.textContent = pw.length === 0 ? '' : (labels[score - 1] || '');
+        };
+
+        window.saveSetting = (key, value) => {
+            const s = JSON.parse(localStorage.getItem('sp_settings') || '{}');
+            s[key] = value;
+            localStorage.setItem('sp_settings', JSON.stringify(s));
+            utils.toast('Setting saved', 'success');
+        };
+
+        async function loadWatchHistory() {
+            const grid = document.getElementById('history-grid');
+            const profile = auth.getProfile();
+            if (!profile) { grid.innerHTML = '<p style="color:var(--clr-text-muted)">No profile selected.</p>'; return; }
+            try {
+                const { data } = await api.get(`/user/watch-history?profileId=${profile.id}&limit=24`);
+                if (!data || data.length === 0) { grid.innerHTML = '<p style="color:var(--clr-text-muted)">No watch history yet.</p>'; return; }
+                grid.innerHTML = data.map(item => `
+                    <div class="history-card" onclick="window.location.href='/pages/player.html?id=${item.content_id}'">
+                        <img src="${item.poster_url || '/assets/images/poster-fallback.jpg'}" alt="${item.title}" onerror="this.src='/assets/images/poster-fallback.jpg'">
+                        <div class="history-card-info">
+                            <div class="history-card-title">${item.title}</div>
+                            ${item.progress_pct ? `<div class="history-progress"><div class="history-progress-fill" style="width:${item.progress_pct}%"></div></div>` : ''}
+                        </div>
+                    </div>`).join('');
+            } catch(e) {
+                grid.innerHTML = '<p style="color:var(--clr-text-muted)">Could not load history.</p>';
+            }
+        }
+
+        // Avatar upload (frontend only preview for now)
+        document.getElementById('avatar-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => { document.getElementById('avatar-img').src = ev.target.result; };
+            reader.readAsDataURL(file);
+            utils.toast('Avatar updated (preview only)', 'info');
+        });
+    })();
+    </script>
+</body>
+</html>

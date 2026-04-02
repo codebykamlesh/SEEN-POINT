@@ -1,0 +1,62 @@
+# =====================================================
+# SEEN POINT — Render.com Deployment Blueprint
+# =====================================================
+# Deploy with: https://render.com/deploy
+#
+# This creates:
+#   1. A Node.js backend web service (free tier)
+#   2. A PostgreSQL database (free tier, 1GB)
+# =====================================================
+
+databases:
+  - name: seenpoint-db
+    databaseName: seenpoint_db
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: seenpoint-backend
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: seenpoint-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: ADMIN_EMAIL
+        value: admin@seenpoint.com
+      - key: ADMIN_PASSWORD
+        value: Admin@123
+      - key: SERVE_FRONTEND
+        value: "true"
+
+      # OneDrive Integration (set these after Azure setup)
+      - key: ONEDRIVE_CLIENT_ID
+        sync: false
+      - key: ONEDRIVE_CLIENT_SECRET
+        sync: false
+      - key: ONEDRIVE_TENANT_ID
+        value: common
+      - key: ONEDRIVE_REDIRECT_URI
+        sync: false

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Watchlist — SEEN POINT</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        main { padding-top: calc(var(--navbar-h) + 40px); min-height: 100vh; padding-bottom: var(--space-xxl); }
+        .page-header { padding: 0 var(--space-xl) var(--space-xl); }
+        .empty-state { 
+            text-align: center; padding: var(--space-xxl); 
+            color: var(--clr-text-muted);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar scrolled">
+        <a href="/index.html" class="navbar-logo">SEEN POINT</a>
+        <ul class="navbar-nav">
+            <li><a href="/index.html" class="nav-link">Home</a></li>
+            <li><a href="/pages/browse.html" class="nav-link">Browse</a></li>
+            <li><a href="/pages/watchlist.html" class="nav-link active">My List</a></li>
+        </ul>
+        <div class="navbar-actions">
+            <div id="user-menu"></div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="page-header">
+            <h1 style="font-size:2rem;margin-bottom:var(--space-xs)">My List</h1>
+            <p class="text-muted" id="watchlist-count"></p>
+        </div>
+
+        <!-- Continue Watching Section -->
+        <section class="section" id="continue-section" style="display:none">
+            <div class="section-header">
+                <h2 class="section-title">▶ Continue Watching</h2>
+            </div>
+            <div class="content-row" id="continue-row"></div>
+        </section>
+
+        <!-- Watchlist grid -->
+        <div class="content-grid page-enter" id="watchlist-grid" style="padding:0 var(--space-xl)"></div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script>
+    (async () => {
+        if (!auth.isLoggedIn()) { window.location.href = '/pages/login.html'; return; }
+        const user = auth.getUser();
+        const profile = auth.getProfile();
+
+        document.getElementById('user-menu').innerHTML = `
+            <a href="/pages/profile.html" class="btn btn-ghost btn-sm">${user.fullName.split(' ')[0]}</a>
+        `;
+
+        if (!profile) {
+            document.getElementById('watchlist-grid').innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--clr-text-muted)">
+                    <p>Please select a profile to view your watchlist.</p>
+                    <a href="/index.html" class="btn btn-primary" style="margin-top:24px">Go Home</a>
+                </div>
+            `;
+            return;
+        }
+
+        // Load watchlist
+        try {
+            const { data } = await api.get(`/user/watchlist?profileId=${profile.id}`);
+
+            document.getElementById('watchlist-count').textContent =
+                `${data.length} title${data.length !== 1 ? 's' : ''} saved`;
+
+            if (data.length === 0) {
+                document.getElementById('watchlist-grid').innerHTML = `
+                    <div class="empty-state" style="grid-column:1/-1">
+                        <div style="font-size:5rem;margin-bottom:24px">📋</div>
+                        <h2>Your list is empty</h2>
+                        <p>Save movies and shows to watch later</p>
+                        <a href="/pages/browse.html" class="btn btn-primary" style="margin-top:24px">Browse Content</a>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('watchlist-grid').innerHTML = data.map(item =>
+                buildContentCard({ ...item, id: item.content_id }, { inWatchlist: true })
+            ).join('');
+
+        } catch (err) {
+            document.getElementById('watchlist-grid').innerHTML = `
+                <div style="grid-column:1/-1;color:var(--clr-error);padding:40px;text-align:center">
+                    Failed to load: ${err.message}
+                </div>
+            `;
+        }
+
+        // Load continue watching
+        try {
+            const { data: cw } = await api.get(`/user/continue-watching?profileId=${profile.id}`);
+            if (cw.length > 0) {
+                document.getElementById('continue-section').style.display = 'block';
+                document.getElementById('continue-row').innerHTML = cw.map(item =>
+                    buildContentCard(item, { progress: item.progress_pct })
+                ).join('');
+            }
+        } catch { /* silent */ }
+    })();
+    </script>
+</body>
+</html>

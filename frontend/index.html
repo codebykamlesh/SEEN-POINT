@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SEEN POINT — Stream movies and TV shows. Watch anywhere, cancel anytime.">
+    <title>SEEN POINT — Stream Unlimited Movies & TV Shows</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Page-specific styles */
+        main { padding-top: var(--navbar-h); }
+        
+        /* Hero dots */
+        .hero-dots {
+            position: absolute;
+            bottom: var(--space-xl);
+            right: var(--space-xl);
+            display: flex;
+            gap: var(--space-xs);
+            z-index: 3;
+        }
+        .hero-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .hero-dot.active {
+            background: var(--clr-white);
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        /* Live indicator */
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--clr-text-muted);
+        }
+        .live-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--clr-success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(70,211,105,0.4); }
+            50%       { opacity: 0.6; box-shadow: 0 0 0 6px transparent; }
+        }
+
+        /* Category tabs */
+        .category-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--clr-border);
+            padding: 0 var(--space-xl);
+            margin-bottom: var(--space-md);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .category-tab {
+            padding: var(--space-sm) var(--space-md);
+            font-size: 0.9rem;
+            color: var(--clr-text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            transition: color var(--transition), border-color var(--transition);
+        }
+        .category-tab:hover { color: var(--clr-white); }
+        .category-tab.active { color: var(--clr-white); border-bottom-color: var(--clr-primary); }
+    </style>
+</head>
+<body>
+    <!-- Status banner: shown when backend is offline or DB not seeded -->
+    <div id="status-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:#f5a623;color:#000;text-align:center;padding:8px 16px;font-size:0.85rem;font-weight:600">
+        ⚠️ <span id="status-banner-msg">Backend not connected — showing demo data</span>
+        <button onclick="document.getElementById('status-banner').style.display='none'" style="margin-left:16px;opacity:0.6;font-size:1rem;line-height:1">✕</button>
+    </div>
+
+    <!-- ─── NAVBAR ────────────────────────────────────────────────── -->
+    <nav class="navbar navbar-gradient" id="navbar">
+        <a href="/index.html" class="navbar-logo">SEEN POINT</a>
+        <ul class="navbar-nav">
+            <li><a href="/index.html"            class="nav-link active">Home</a></li>
+            <li><a href="/pages/browse.html"      class="nav-link">Browse</a></li>
+            <li><a href="/pages/browse.html?type=movie"  class="nav-link">Movies</a></li>
+            <li><a href="/pages/browse.html?type=series" class="nav-link">TV Shows</a></li>
+            <li><a href="/pages/watchlist.html"   class="nav-link">My List</a></li>
+        </ul>
+        <div class="navbar-actions">
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                <span id="viewer-count">—</span> watching
+            </div>
+            <button class="navbar-search-btn" onclick="window.location='/pages/search.html'" aria-label="Search">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </button>
+            <div class="navbar-user-menu" id="user-menu">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- ─── HERO BANNER ──────────────────────────────────────────── -->
+    <section class="hero" id="hero">
+        <div class="hero-backdrop" id="hero-backdrop"></div>
+        <div class="hero-gradient"></div>
+        <div class="hero-content page-enter" id="hero-content">
+            <div class="hero-badge">🔥 Featured</div>
+            <h1 class="hero-title" id="hero-title">Loading...</h1>
+            <div class="hero-meta">
+                <span class="hero-rating" id="hero-rating"></span>
+                <span id="hero-year"></span>
+                <span id="hero-runtime"></span>
+                <span id="hero-maturity"></span>
+            </div>
+            <div class="hero-genres" id="hero-genres"></div>
+            <p class="hero-synopsis" id="hero-synopsis"></p>
+            <div class="hero-actions">
+                <button class="btn btn-primary btn-lg" id="hero-play-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                    Play Now
+                </button>
+                <button class="btn btn-secondary btn-lg" id="hero-info-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    More Info
+                </button>
+                <button class="btn btn-ghost btn-lg" id="hero-watchlist-btn">+ My List</button>
+            </div>
+        </div>
+        <div class="hero-dots" id="hero-dots"></div>
+    </section>
+
+    <!-- ─── MAIN CONTENT ──────────────────────────────────────────── -->
+    <main>
+        <!-- Category Tabs -->
+        <div class="category-tabs" id="category-tabs">
+            <div class="category-tab active" data-genre="all">All</div>
+            <!-- Dynamic genre tabs loaded via JS -->
+        </div>
+
+        <!-- Continue Watching (shown only if logged in) -->
+        <section class="section" id="continue-watching-section" style="display:none">
+            <div class="section-header">
+                <h2 class="section-title">▶ Continue Watching</h2>
+                <a href="/pages/watchlist.html" class="section-link">See all →</a>
+            </div>
+            <div class="content-row" id="continue-watching-row"></div>
+        </section>
+
+        <!-- Trending Now (from materialized view) -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">🔥 Trending <span class="section-title-accent">Now</span></h2>
+                <a href="/pages/browse.html?sort=views" class="section-link">See all →</a>
+            </div>
+            <div class="content-row" id="trending-row"></div>
+        </section>
+
+        <!-- Genre Rows (dynamic) -->
+        <div id="genre-rows"></div>
+
+        <!-- New Releases -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">✨ New Releases</h2>
+                <a href="/pages/browse.html?sort=newest" class="section-link">See all →</a>
+            </div>
+            <div class="content-row" id="new-releases-row"></div>
+        </section>
+
+        <!-- Top Rated -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">⭐ Top <span class="section-title-accent">Rated</span></h2>
+                <a href="/pages/browse.html?sort=rating" class="section-link">See all →</a>
+            </div>
+            <div class="content-row" id="top-rated-row"></div>
+        </section>
+    </main>
+
+    <!-- ─── FOOTER ────────────────────────────────────────────────── -->
+    <footer style="text-align:center; padding: 40px 20px; color: var(--clr-text-dim); font-size:0.85rem; border-top: 1px solid var(--clr-border);">
+        <p class="navbar-logo" style="font-size:1.5rem; margin-bottom:16px;">SEEN POINT</p>
+        <p>© 2026 SEEN POINT — Free Movie Streaming Platform</p>
+        <p style="margin-top:8px">Built with ❤️ using PostgreSQL, Node.js, OneDrive & vanilla JS</p>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script>
+    (async () => {
+        // ─── Navbar scroll effect ───────────────────────────────────
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            navbar.classList.toggle('scrolled', window.scrollY > 50);
+            navbar.classList.toggle('navbar-gradient', window.scrollY <= 50);
+        });
+
+        // ─── Inject user nav ────────────────────────────────────────
+        const userMenu = document.getElementById('user-menu');
+        const user = auth.getUser();
+        if (user) {
+            const profile = auth.getProfile();
+            userMenu.innerHTML = `
+                <div class="navbar-avatar" id="nav-avatar">
+                    <img src="${profile?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=cv'}" alt="Profile">
+                </div>
+                <div class="user-dropdown">
+                    <div class="dropdown-item" style="font-weight:600;color:var(--clr-white)">${user.fullName}</div>
+                    <div class="dropdown-item" style="font-size:0.78rem;color:var(--clr-text-muted)">${user.planName || 'Basic'} Plan</div>
+                    <div class="dropdown-divider"></div>
+                    <a href="/pages/profile.html" class="dropdown-item">👤 My Profile</a>
+                    <a href="/pages/watchlist.html" class="dropdown-item">📋 My List</a>
+                    ${user.isAdmin ? '<a href="/pages/admin.html" class="dropdown-item" style="color:var(--clr-warning)">⚙️ Admin Panel</a>' : ''}
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger" onclick="auth.logout()">🚪 Sign Out</div>
+                </div>
+            `;
+        } else {
+            userMenu.innerHTML = `<a href="/pages/login.html" class="btn btn-primary btn-sm">Sign In</a>`;
+        }
+
+        // ─── WebSocket: Live viewer count ───────────────────────────
+        connectWebSocket((msg) => {
+            if (msg.type === 'connection') {
+                document.getElementById('viewer-count').textContent =
+                    utils.formatNumber(msg.data.connectedUsers);
+            }
+        });
+
+        // ─── Load Featured Hero ──────────────────────────────────────
+        let featuredItems = [];
+        let heroIdx = 0;
+
+        async function loadHero() {
+            // Show skeleton while loading
+            document.getElementById('hero-backdrop').style.background = 'var(--clr-bg-2)';
+            try {
+                const res = await api.get('/content/featured');
+                featuredItems = res.data;
+                if (featuredItems.length > 0) {
+                    renderHero(featuredItems[0]);
+                    buildHeroDots();
+                    // Auto-rotate hero every 8 seconds
+                    setInterval(nextHero, 8000);
+                }
+            } catch (e) {
+                document.getElementById('hero-title').textContent = 'Welcome to SEEN POINT';
+                document.getElementById('hero-synopsis').textContent = 'Stream your favorite movies & TV shows.';
+            }
+        }
+
+        function renderHero(item) {
+            document.getElementById('hero-backdrop').style.backgroundImage = `url('${item.backdrop_url || item.poster_url}')`;
+            document.getElementById('hero-title').textContent = item.title;
+            document.getElementById('hero-rating').textContent = item.avg_rating ? `★ ${parseFloat(item.avg_rating).toFixed(1)}` : '';
+            document.getElementById('hero-year').textContent = item.release_year || '';
+            document.getElementById('hero-runtime').textContent = item.duration_min ? utils.formatRuntime(item.duration_min) : '';
+            document.getElementById('hero-maturity').innerHTML = item.maturity_rating ? `<span class="maturity-badge">${item.maturity_rating}</span>` : '';
+            document.getElementById('hero-synopsis').textContent = item.synopsis || '';
+            document.getElementById('hero-genres').innerHTML = (item.genres || [])
+                .slice(0, 3)
+                .map(g => `<span class="hero-genre-tag">${g.name}</span>`)
+                .join('');
+            document.getElementById('hero-play-btn').onclick = () => window.location.href = `/pages/player.html?id=${item.id}&autoplay=true`;
+            document.getElementById('hero-info-btn').onclick = () => openDetail(item.id);
+            document.getElementById('hero-watchlist-btn').onclick = (e) => toggleWatchlist(e, item.id);
+        }
+
+        function buildHeroDots() {
+            const dotsEl = document.getElementById('hero-dots');
+            dotsEl.innerHTML = featuredItems.map((_, i) =>
+                `<div class="hero-dot ${i === 0 ? 'active' : ''}" onclick="setHeroIdx(${i})"></div>`
+            ).join('');
+        }
+
+        window.setHeroIdx = function(idx) {
+            heroIdx = idx;
+            renderHero(featuredItems[idx]);
+            document.querySelectorAll('.hero-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+        };
+
+        function nextHero() {
+            const next = (heroIdx + 1) % featuredItems.length;
+            setHeroIdx(next);
+        }
+
+        // ─── Category Tabs from Genres ───────────────────────────────
+        async function loadGenreTabs() {
+            try {
+                const { data: genres } = await api.get('/content/genres/all');
+                const tabsEl = document.getElementById('category-tabs');
+                genres.slice(0, 8).forEach(g => {
+                    const div = document.createElement('div');
+                    div.className = 'category-tab';
+                    div.dataset.genre = g.slug;
+                    div.textContent = g.name;
+                    div.onclick = () => {
+                        document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                        div.classList.add('active');
+                        scrollToGenreSection(g.slug);
+                    };
+                    tabsEl.appendChild(div);
+                });
+            } catch { /* silent fail */ }
+        }
+
+        function scrollToGenreSection(slug) {
+            const el = document.getElementById(`genre-section-${slug}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ─── Helper: Render a row ────────────────────────────────────
+        function renderRow(containerId, items, withProgress = false) {
+            const el = document.getElementById(containerId);
+            if (!el) return;
+            if (items.length === 0) {
+                el.innerHTML = '<p class="text-muted" style="padding:20px 0">Nothing here yet.</p>';
+                return;
+            }
+            el.innerHTML = items.map(item => buildContentCard(item, {
+                progress: withProgress && item.progress_pct ? item.progress_pct : null,
+            })).join('');
+        }
+
+        function renderSkeletonRow(containerId, count = 8) {
+            const el = document.getElementById(containerId);
+            if (el) el.innerHTML = Array(count).fill(utils.skeletonCard()).join('');
+        }
+
+        // ─── Load All Rows ───────────────────────────────────────────
+        async function loadAllRows() {
+            // Skeletons first
+            renderSkeletonRow('trending-row');
+            renderSkeletonRow('new-releases-row');
+            renderSkeletonRow('top-rated-row');
+
+            try {
+                // Trending (from materialized view)
+                const trendRes = await api.get('/content/trending?limit=16');
+                renderRow('trending-row', trendRes.data);
+
+                // New Releases
+                const newRes = await api.get('/content?sort=newest&limit=16');
+                renderRow('new-releases-row', newRes.data);
+
+                // Top Rated
+                const topRes = await api.get('/content?sort=rating&limit=16');
+                renderRow('top-rated-row', topRes.data);
+
+                // Genre rows  
+                const { data: genres } = await api.get('/content/genres/all');
+                const genreRowsEl = document.getElementById('genre-rows');
+
+                await Promise.all(genres.slice(0, 5).map(async (genre) => {
+                    try {
+                        const gRes = await api.get(`/content?genre=${genre.slug}&sort=rating&limit=16`);
+                        if (gRes.data.length < 3) return;
+
+                        const section = document.createElement('section');
+                        section.className = 'section';
+                        section.id = `genre-section-${genre.slug}`;
+                        section.innerHTML = `
+                            <div class="section-header">
+                                <h2 class="section-title">${genre.name}</h2>
+                                <a href="/pages/browse.html?genre=${genre.slug}" class="section-link">See all →</a>
+                            </div>
+                            <div class="content-row">${gRes.data.map(i => buildContentCard(i)).join('')}</div>
+                        `;
+                        genreRowsEl.appendChild(section);
+                    } catch { /* skip */ }
+                }));
+
+            } catch (err) {
+                console.error('Failed to load content:', err);
+                // Show banner when backend is offline
+                const banner = document.getElementById('status-banner');
+                const msg    = document.getElementById('status-banner-msg');
+                if (banner && msg) {
+                    if (err.isNetworkError) {
+                        msg.textContent = 'Backend offline — run "npm run dev" in the backend folder. Showing demo data.';
+                    } else {
+                        msg.textContent = `Error: ${err.message}`;
+                    }
+                    banner.style.display = 'block';
+                }
+            }
+        }
+
+        // Helper to check if response used fallback data
+        function checkFallback(res) {
+            if (res && res._fallback) {
+                const banner = document.getElementById('status-banner');
+                if (banner) banner.style.display = 'block';
+            }
+        }
+
+        // ─── Continue Watching ───────────────────────────────────────
+        async function loadContinueWatching() {
+            if (!auth.isLoggedIn()) return;
+            const profile = auth.getProfile();
+            if (!profile) return;
+
+            try {
+                const { data } = await api.get(`/user/continue-watching?profileId=${profile.id}`);
+                if (data.length === 0) return;
+
+                const section = document.getElementById('continue-watching-section');
+                section.style.display = 'block';
+
+                const row = document.getElementById('continue-watching-row');
+                row.innerHTML = data.map(item => buildContentCard(item, { progress: item.progress_pct })).join('');
+            } catch { /* silent */ }
+        }
+
+        // ─── INIT ────────────────────────────────────────────────────
+        await Promise.all([
+            loadHero(),
+            loadGenreTabs(),
+            loadAllRows(),
+            loadContinueWatching(),
+        ]);
+    })();
+    </script>
+</body>
+</html>

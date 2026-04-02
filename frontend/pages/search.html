@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search — SEEN POINT</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        main { padding-top: calc(var(--navbar-h) + 40px); min-height: 100vh; }
+        .search-page-header {
+            padding: 0 var(--space-xl) var(--space-xl);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .search-page-title {
+            font-size: 1.5rem;
+            margin-bottom: var(--space-lg);
+            color: var(--clr-text-muted);
+        }
+        #results-container {
+            padding: 0 var(--space-xl);
+            max-width: var(--max-w);
+            margin: 0 auto;
+        }
+        .results-header {
+            margin-bottom: var(--space-lg);
+            font-size: 0.9rem;
+            color: var(--clr-text-muted);
+        }
+        .results-header strong { color: var(--clr-white); }
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--space-md);
+        }
+        .trending-searches {
+            margin-top: var(--space-xl);
+        }
+        .trending-tag {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--clr-text);
+            transition: all 0.2s;
+            margin: 4px;
+        }
+        .trending-tag:hover {
+            background: var(--clr-primary);
+            border-color: var(--clr-primary);
+            color: white;
+        }
+        /* Search input focus ring accent */
+        .search-page-input:focus { border-color: var(--clr-primary) !important; }
+    </style>
+</head>
+<body>
+    <nav class="navbar scrolled">
+        <a href="/index.html" class="navbar-logo">SEEN POINT</a>
+        <ul class="navbar-nav">
+            <li><a href="/index.html" class="nav-link">Home</a></li>
+            <li><a href="/pages/browse.html" class="nav-link">Browse</a></li>
+        </ul>
+        <div class="navbar-actions">
+            <div id="user-menu"></div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="search-page-header">
+            <p class="search-page-title">Search SEEN POINT</p>
+            <!-- Search bar with live dropdown -->
+            <div class="search-container" style="max-width:100%">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="search-input"
+                    placeholder="Search movies, shows, genres, actors..."
+                    autocomplete="off"
+                    autofocus>
+                <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+                <div class="search-results-dropdown" id="live-dropdown" style="display:none"></div>
+            </div>
+
+            <!-- Quick type filters -->
+            <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-md);flex-wrap:wrap">
+                <button class="filter-chip active" data-type="">All</button>
+                <button class="filter-chip" data-type="movie">Movies</button>
+                <button class="filter-chip" data-type="series">TV Shows</button>
+                <button class="filter-chip" data-type="documentary">Docs</button>
+            </div>
+        </div>
+
+        <div id="results-container">
+            <!-- Trending searches shown when no query -->
+            <div id="trending-section">
+                <h2 style="font-size:1.2rem;margin-bottom:var(--space-md)">Trending Searches</h2>
+                <div id="trending-tags"></div>
+                <div class="trending-searches">
+                    <h2 style="font-size:1.2rem;margin-bottom:var(--space-md);margin-top:var(--space-xl)">
+                        🔥 Popular Right Now
+                    </h2>
+                    <div class="result-grid" id="trending-grid"></div>
+                </div>
+            </div>
+
+            <!-- Search results (hidden until search) -->
+            <div id="search-results-section" style="display:none">
+                <div class="results-header" id="results-header"></div>
+                <div class="result-grid" id="results-grid"></div>
+                <div class="pagination" id="results-pagination" style="display:none"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script>
+    (() => {
+        // User nav
+        const user = auth.getUser();
+        document.getElementById('user-menu').innerHTML = user
+            ? `<button class="btn btn-ghost btn-sm" onclick="auth.logout()">Sign Out</button>`
+            : `<a href="/pages/login.html" class="btn btn-primary btn-sm">Sign In</a>`;
+
+        let currentType = '';
+        let searchPage  = 1;
+        let lastQuery   = '';
+
+        // ─── Type filter ─────────────────────────────────────────────
+        document.querySelectorAll('[data-type]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentType = btn.dataset.type;
+                if (lastQuery) doSearch();
+            });
+        });
+
+        // ─── Live dropdown search (debounced) ────────────────────────
+        const liveSearch = utils.debounce(async (q) => {
+            const dropdown = document.getElementById('live-dropdown');
+            if (q.length < 2) { dropdown.style.display = 'none'; return; }
+
+            try {
+                const { data } = await api.get(`/content/search?q=${encodeURIComponent(q)}&limit=6${currentType ? '&type='+currentType : ''}`);
+
+                if (data.length === 0) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+
+                dropdown.innerHTML = data.map(item => `
+                    <div class="search-result-item" onclick="openDetail('${item.id}')">
+                        <img class="search-result-img" 
+                             src="${item.poster_url || ''}" 
+                             onerror="this.style.display='none'"
+                             alt="${item.title}">
+                        <div class="search-result-info">
+                            <div class="search-result-title">${highlightQuery(item.title, q)}</div>
+                            <div class="search-result-meta">
+                                ${item.content_type} · ${item.release_year || 'N/A'}
+                                ${item.avg_rating ? ' · ★ ' + parseFloat(item.avg_rating).toFixed(1) : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('') + `
+                    <div class="search-result-item" style="justify-content:center;color:var(--clr-primary);font-size:0.875rem"
+                         onclick="doSearch()">
+                        See all results for "${q}" →
+                    </div>
+                `;
+
+                dropdown.style.display = 'block';
+            } catch { dropdown.style.display = 'none'; }
+        }, 250);
+
+        // ─── Highlight search term in text ───────────────────────────
+        function highlightQuery(text, query) {
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<mark style="background:rgba(0,212,255,0.3);color:white;border-radius:2px">$1</mark>');
+        }
+
+        // ─── Full page search ────────────────────────────────────────
+        window.doSearch = async function(page = 1) {
+            const q = document.getElementById('search-input').value.trim();
+            if (q.length < 2) return;
+
+            lastQuery = q;
+            searchPage = page;
+            document.getElementById('live-dropdown').style.display = 'none';
+            document.getElementById('trending-section').style.display = 'none';
+            document.getElementById('search-results-section').style.display = 'block';
+
+            const header = document.getElementById('results-header');
+            const grid   = document.getElementById('results-grid');
+
+            grid.innerHTML = Array(8).fill('').map(() => `
+                <div class="content-card skeleton">
+                    <div class="skeleton-img"></div>
+                    <div class="skeleton-line" style="margin-top:8px"></div>
+                    <div class="skeleton-line short"></div>
+                </div>
+            `).join('');
+            header.textContent = `Searching for "${q}"...`;
+
+            try {
+                const params = new URLSearchParams({ q, page, limit: 24 });
+                if (currentType) params.set('type', currentType);
+
+                const { data, pagination, query: returnedQuery } = await api.get(`/content/search?${params}`);
+
+                header.innerHTML = pagination.total > 0
+                    ? `Showing <strong>${data.length}</strong> of <strong>${pagination.total}</strong> results for <strong>"${returnedQuery}"</strong>`
+                    : `No results for <strong>"${returnedQuery}"</strong> — try different keywords`;
+
+                if (data.length === 0) {
+                    grid.innerHTML = `
+                        <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--clr-text-muted)">
+                            <div style="font-size:4rem;margin-bottom:16px">🔍</div>
+                            <h3>Nothing found</h3>
+                            <p>Try: drama, sci-fi, action, 2023...</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                grid.innerHTML = data.map(item => buildContentCard(item)).join('');
+
+                // Pagination
+                renderPagination(pagination);
+            } catch (err) {
+                grid.innerHTML = `<div style="grid-column:1/-1;color:var(--clr-error);padding:20px">Search failed: ${err.message}</div>`;
+            }
+        };
+
+        function renderPagination({ page, totalPages }) {
+            const el = document.getElementById('results-pagination');
+            if (totalPages <= 1) { el.style.display = 'none'; return; }
+            el.style.display = 'flex';
+            el.innerHTML = `
+                <button class="page-btn" ${page===1?'disabled':''} onclick="doSearch(${page-1})">‹ Prev</button>
+                <span style="color:var(--clr-text-muted);font-size:0.875rem">Page ${page} of ${totalPages}</span>
+                <button class="page-btn" ${page===totalPages?'disabled':''} onclick="doSearch(${page+1})">Next ›</button>
+            `;
+        }
+
+        // ─── Clear search ────────────────────────────────────────────
+        window.clearSearch = function() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('live-dropdown').style.display = 'none';
+            document.getElementById('trending-section').style.display = 'block';
+            document.getElementById('search-results-section').style.display = 'none';
+            lastQuery = '';
+        };
+
+        // ─── Input listeners ─────────────────────────────────────────
+        const input = document.getElementById('search-input');
+        input.addEventListener('input', (e) => liveSearch(e.target.value));
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                doSearch();
+            }
+            if (e.key === 'Escape') {
+                document.getElementById('live-dropdown').style.display = 'none';
+            }
+        });
+
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            if (!document.querySelector('.search-container').contains(e.target)) {
+                document.getElementById('live-dropdown').style.display = 'none';
+            }
+        });
+
+        // ─── Load trending suggestions ───────────────────────────────
+        async function loadTrending() {
+            // Quick search tags
+            const tags = ['Action', 'Drama', 'Sci-Fi', 'Horror', 'Comedy', 'Thriller', 'Romance', 'Animation'];
+            document.getElementById('trending-tags').innerHTML = tags
+                .map(t => `<span class="trending-tag" onclick="document.getElementById('search-input').value='${t}';doSearch()">${t}</span>`)
+                .join('');
+
+            // Load trending content
+            try {
+                const { data } = await api.get('/content/trending?limit=12');
+                document.getElementById('trending-grid').innerHTML = data.map(item => buildContentCard(item)).join('');
+            } catch {
+                document.getElementById('trending-grid').innerHTML = '<p class="text-muted">Could not load trending content.</p>';
+            }
+        }
+
+        // ─── Check URL for pre-filled query ─────────────────────────
+        const urlQ = new URLSearchParams(window.location.search).get('q');
+        if (urlQ) {
+            input.value = urlQ;
+            loadTrending().then(() => doSearch());
+        } else {
+            loadTrending();
+        }
+    })();
+    </script>
+</body>
+</html>

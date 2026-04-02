@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse all movies and TV shows on SEEN POINT">
+    <title>Browse — SEEN POINT</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        main { padding-top: calc(var(--navbar-h) + 20px); min-height: 100vh; }
+        .browse-header {
+            padding: var(--space-xl) var(--space-xl) var(--space-lg);
+        }
+        .browse-title { font-size: 2rem; font-weight: 800; margin-bottom: var(--space-md); }
+        .results-info { font-size: 0.875rem; color: var(--clr-text-muted); }
+        .sort-wrap { display: flex; align-items: center; gap: var(--space-sm); }
+        .sort-label { font-size: 0.875rem; color: var(--clr-text-muted); white-space: nowrap; }
+        .no-results {
+            text-align: center;
+            padding: var(--space-xxl) var(--space-xl);
+            color: var(--clr-text-muted);
+        }
+        .no-results h3 { font-size: 1.5rem; margin-bottom: var(--space-sm); }
+    </style>
+</head>
+<body>
+    <nav class="navbar scrolled">
+        <a href="/index.html" class="navbar-logo">SEEN POINT</a>
+        <ul class="navbar-nav">
+            <li><a href="/index.html" class="nav-link">Home</a></li>
+            <li><a href="/pages/browse.html" class="nav-link active">Browse</a></li>
+            <li><a href="/pages/browse.html?type=movie" class="nav-link">Movies</a></li>
+            <li><a href="/pages/browse.html?type=series" class="nav-link">TV Shows</a></li>
+            <li><a href="/pages/watchlist.html" class="nav-link">My List</a></li>
+        </ul>
+        <div class="navbar-actions">
+            <button class="navbar-search-btn" onclick="window.location='/pages/search.html'">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </button>
+            <div id="user-menu"></div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="browse-header">
+            <h1 class="browse-title" id="browse-title">Browse All</h1>
+            <div class="results-info" id="results-info"></div>
+        </div>
+
+        <!-- Filter & Sort Bar -->
+        <div class="filter-bar" id="filter-bar">
+            <!-- Type filter -->
+            <button class="filter-chip active" data-filter="type" data-value="all">All</button>
+            <button class="filter-chip" data-filter="type" data-value="movie">🎬 Movies</button>
+            <button class="filter-chip" data-filter="type" data-value="series">📺 TV Shows</button>
+            <button class="filter-chip" data-filter="type" data-value="documentary">🎙️ Documentaries</button>
+            
+            <div style="width:1px;height:24px;background:var(--clr-border);margin:0 var(--space-xs)"></div>
+
+            <!-- Genre filter (dynamic) -->
+            <select class="filter-select" id="genre-filter">
+                <option value="">All Genres</option>
+            </select>
+
+            <!-- Year filter -->
+            <select class="filter-select" id="year-filter">
+                <option value="">All Years</option>
+                <!-- Populated by JS -->
+            </select>
+
+            <!-- Rating filter -->
+            <select class="filter-select" id="rating-filter">
+                <option value="">Any Rating</option>
+                <option value="9">9+ ★</option>
+                <option value="8">8+ ★</option>
+                <option value="7">7+ ★</option>
+                <option value="6">6+ ★</option>
+            </select>
+
+            <div style="margin-left:auto;display:flex;align-items:center;gap:var(--space-sm)">
+                <span class="sort-label">Sort:</span>
+                <select class="filter-select" id="sort-filter">
+                    <option value="rating">Top Rated</option>
+                    <option value="views">Most Watched</option>
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="title">A-Z</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid page-enter" id="content-grid"></div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination" style="display:none"></div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script>
+    (() => {
+        // ─── User nav ───────────────────────────────────────────────
+        const userMenu = document.getElementById('user-menu');
+        const user = auth.getUser();
+        userMenu.innerHTML = user
+            ? `<div class="navbar-avatar" style="cursor:pointer" onclick="window.location='/pages/profile.html'">
+                   <img src="${auth.getProfile()?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=cv'}" alt="Avatar">
+               </div>`
+            : `<a href="/pages/login.html" class="btn btn-primary btn-sm">Sign In</a>`;
+
+        // ─── State ──────────────────────────────────────────────────
+        const state = {
+            type:   '',
+            genre:  '',
+            year:   '',
+            rating: '',
+            sort:   'rating',
+            page:   1,
+            limit:  24,
+        };
+
+        // ─── Read URL params ─────────────────────────────────────────
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('type'))   state.type   = urlParams.get('type');
+        if (urlParams.get('genre'))  state.genre  = urlParams.get('genre');
+        if (urlParams.get('sort'))   state.sort   = urlParams.get('sort');
+        if (state.type) {
+            document.querySelectorAll('[data-filter="type"]').forEach(b => {
+                b.classList.toggle('active', b.dataset.value === state.type);
+            });
+        }
+
+        // ─── Update page title ───────────────────────────────────────
+        function updateTitle() {
+            const titleMap = { movie: 'Movies', series: 'TV Shows', documentary: 'Documentaries', '': 'Browse All' };
+            document.getElementById('browse-title').textContent = titleMap[state.type] || 'Browse All';
+            document.title = (titleMap[state.type] || 'Browse All') + ' — SEEN POINT';
+        }
+
+        // ─── Load genres into select ─────────────────────────────────
+        async function loadGenres() {
+            try {
+                const { data } = await api.get('/content/genres/all');
+                const select = document.getElementById('genre-filter');
+                data.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.slug;
+                    opt.textContent = `${g.name} (${g.content_count})`;
+                    if (g.slug === state.genre) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            } catch { /* silent */ }
+        }
+
+        // ─── Populate year filter ────────────────────────────────────
+        (() => {
+            const select = document.getElementById('year-filter');
+            for (let y = 2026; y >= 1990; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                select.appendChild(opt);
+            }
+        })();
+
+        // ─── Load Content ────────────────────────────────────────────
+        async function loadContent() {
+            const grid = document.getElementById('content-grid');
+            // Show skeleton
+            grid.innerHTML = Array(12).fill('').map(() => `
+                <div class="content-card skeleton">
+                    <div class="skeleton-img"></div>
+                    <div class="skeleton-line" style="margin-top:8px"></div>
+                    <div class="skeleton-line short"></div>
+                </div>
+            `).join('');
+
+            const params = new URLSearchParams();
+            if (state.type && state.type !== 'all') params.set('type',   state.type);
+            if (state.genre)  params.set('genre',  state.genre);
+            if (state.year)   params.set('year',   state.year);
+            if (state.rating) params.set('rating', state.rating);
+            params.set('sort',  state.sort);
+            params.set('page',  state.page);
+            params.set('limit', state.limit);
+
+            try {
+                const { data, pagination } = await api.get(`/content?${params}`);
+
+                document.getElementById('results-info').textContent =
+                    `${pagination.total.toLocaleString()} result${pagination.total !== 1 ? 's' : ''} found`;
+
+                if (data.length === 0) {
+                    grid.innerHTML = `
+                        <div class="no-results" style="grid-column:1/-1">
+                            <div style="font-size:4rem;margin-bottom:var(--space-md)">🎬</div>
+                            <h3>No content found</h3>
+                            <p>Try adjusting your filters</p>
+                        </div>
+                    `;
+                    document.getElementById('pagination').style.display = 'none';
+                    return;
+                }
+
+                grid.innerHTML = data.map(item => buildContentCard(item)).join('');
+                renderPagination(pagination);
+            } catch (err) {
+                grid.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--clr-error)">Failed to load content: ${err.message}</div>`;
+            }
+        }
+
+        // ─── Pagination ──────────────────────────────────────────────
+        function renderPagination({ page, totalPages }) {
+            const el = document.getElementById('pagination');
+            if (totalPages <= 1) { el.style.display = 'none'; return; }
+            el.style.display = 'flex';
+
+            let html = `
+                <button class="page-btn" ${page === 1 ? 'disabled' : ''} onclick="changePage(${page - 1})">‹</button>
+            `;
+
+            // Show pages around current
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || Math.abs(i - page) <= 2) {
+                    html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+                } else if (Math.abs(i - page) === 3) {
+                    html += `<span style="color:var(--clr-text-muted);padding:0 4px">…</span>`;
+                }
+            }
+
+            html += `<button class="page-btn" ${page === totalPages ? 'disabled' : ''} onclick="changePage(${page + 1})">›</button>`;
+            el.innerHTML = html;
+        }
+
+        window.changePage = (p) => {
+            state.page = p;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            loadContent();
+        };
+
+        // ─── Filter Listeners ────────────────────────────────────────
+        document.querySelectorAll('[data-filter="type"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-filter="type"]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.type = btn.dataset.value === 'all' ? '' : btn.dataset.value;
+                state.page = 1;
+                updateTitle();
+                loadContent();
+            });
+        });
+
+        document.getElementById('genre-filter').addEventListener('change', (e) => {
+            state.genre = e.target.value;
+            state.page = 1;
+            loadContent();
+        });
+
+        document.getElementById('year-filter').addEventListener('change', (e) => {
+            state.year = e.target.value;
+            state.page = 1;
+            loadContent();
+        });
+
+        document.getElementById('rating-filter').addEventListener('change', (e) => {
+            state.rating = e.target.value;
+            state.page = 1;
+            loadContent();
+        });
+
+        document.getElementById('sort-filter').addEventListener('change', (e) => {
+            state.sort = e.target.value;
+            state.page = 1;
+            loadContent();
+        });
+
+        // Set sort dropdown initial value
+        document.getElementById('sort-filter').value = state.sort;
+
+        // ─── Init ────────────────────────────────────────────────────
+        updateTitle();
+        loadGenres();
+        loadContent();
+    })();
+    </script>
+</body>
+</html>

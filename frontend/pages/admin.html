@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel — SEEN POINT</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        body { background: var(--clr-bg); overflow-x: hidden; }
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-xl);
+        }
+        .admin-header h1 { font-size: 1.5rem; }
+        .chart-wrap {
+            background: var(--clr-surface);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        .chart-title { 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+            color: var(--clr-text-muted); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            margin-bottom: var(--space-md); 
+        }
+        /* Mini bar chart */
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 120px;
+        }
+        .bar-col { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+        .bar { 
+            width: 100%; 
+            background: var(--clr-primary); 
+            border-radius: 4px 4px 0 0; 
+            transition: height 0.5s ease; 
+            min-height: 4px;
+            opacity: 0.8;
+        }
+        .bar:hover { opacity: 1; }
+        .bar-label { font-size: 0.65rem; color: var(--clr-text-muted); white-space: nowrap; }
+        .bar-val { font-size: 0.7rem; color: var(--clr-text-muted); }
+        /* Donut chart (CSS only) */
+        .genre-bar {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: 8px;
+        }
+        .genre-bar-label { font-size: 0.8rem; min-width: 80px; color: var(--clr-text); }
+        .genre-bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.06);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+        .genre-bar-fill {
+            height: 100%;
+            background: var(--clr-primary);
+            border-radius: var(--radius-full);
+            transition: width 0.6s ease;
+        }
+        .genre-bar-count { font-size: 0.8rem; color: var(--clr-text-muted); min-width: 40px; text-align: right; }
+        /* Form modal */
+        .admin-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+        @media (max-width: 600px) { .admin-form-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo">SEEN POINT</div>
+            <p style="font-size:0.75rem;color:var(--clr-text-dim);padding:var(--space-sm) var(--space-lg)">ADMIN PANEL</p>
+            <nav class="sidebar-nav">
+                <div class="sidebar-item active" data-panel="dashboard">
+                    <span>📊</span> Dashboard
+                </div>
+                <div class="sidebar-item" data-panel="content">
+                    <span>🎬</span> Content
+                </div>
+                <div class="sidebar-item" data-panel="users">
+                    <span>👥</span> Users
+                </div>
+                <div class="sidebar-item" data-panel="analytics">
+                    <span>📈</span> Analytics
+                </div>
+                <div class="sidebar-item" data-panel="onedrive">
+                    <span>☁️</span> OneDrive
+                </div>
+                <div class="sidebar-item" data-panel="db">
+                    <span>🗃️</span> Database
+                </div>
+            </nav>
+            <div style="padding:var(--space-lg);border-top:1px solid var(--clr-border)">
+                <a href="/index.html" class="sidebar-item" style="font-size:0.875rem">
+                    ← Back to Site
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="admin-main">
+            <!-- ─── DASHBOARD PANEL ─── -->
+            <div id="panel-dashboard">
+                <div class="admin-header">
+                    <h1>Dashboard</h1>
+                    <div style="display:flex;gap:var(--space-sm)">
+                        <button class="btn btn-primary btn-sm" id="refresh-views-btn">
+                            🔄 Refresh Materialized Views
+                        </button>
+                        <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">↺ Reload</button>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="stats-grid" id="kpi-cards">
+                    <!-- Populated by JS -->
+                    <div class="stat-card skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                    <div class="stat-card skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                    <div class="stat-card skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                    <div class="stat-card skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                </div>
+
+                <!-- Charts Row -->
+                <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--space-md)">
+                    <!-- Daily views chart -->
+                    <div class="chart-wrap">
+                        <p class="chart-title">Daily Views (Last 14 Days)</p>
+                        <div class="bar-chart" id="views-chart"></div>
+                    </div>
+                    <!-- Genre stats -->
+                    <div class="chart-wrap">
+                        <p class="chart-title">Top Genres by Views</p>
+                        <div id="genre-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Top Content -->
+                <div class="admin-table-wrap" style="margin-top:var(--space-md)">
+                    <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--clr-border);display:flex;align-items:center;justify-content:space-between">
+                        <h2 style="font-size:1rem">🏆 Top Content by Views</h2>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Content</th>
+                                <th>Type</th>
+                                <th>Views</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-content-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ─── CONTENT PANEL ─── -->
+            <div id="panel-content" style="display:none">
+                <div class="admin-header">
+                    <h1>Content Management</h1>
+                    <button class="btn btn-primary btn-sm" onclick="openAddContentModal()">+ Add Content</button>
+                </div>
+
+                <!-- Filters -->
+                <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md)">
+                    <select class="filter-select" id="content-type-filter">
+                        <option value="">All Types</option>
+                        <option value="movie">Movie</option>
+                        <option value="series">Series</option>
+                        <option value="documentary">Documentary</option>
+                    </select>
+                    <select class="filter-select" id="content-pub-filter">
+                        <option value="">All Status</option>
+                        <option value="true">Published</option>
+                        <option value="false">Draft</option>
+                    </select>
+                    <button class="btn btn-ghost btn-sm" onclick="loadContentPanel()">Filter</button>
+                </div>
+
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Poster</th>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Year</th>
+                                <th>Status</th>
+                                <th>Views</th>
+                                <th>Rating</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="content-tbody"></tbody>
+                    </table>
+                    <div class="pagination" id="content-pagination" style="padding:var(--space-md)"></div>
+                </div>
+            </div>
+
+            <!-- ─── USERS PANEL ─── -->
+            <div id="panel-users" style="display:none">
+                <div class="admin-header"><h1>User Management</h1></div>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Plan</th>
+                                <th>Status</th>
+                                <th>Last Login</th>
+                                <th>Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ─── ANALYTICS PANEL ─── -->
+            <div id="panel-analytics" style="display:none">
+                <div class="admin-header"><h1>Analytics</h1></div>
+                <div id="analytics-content">
+                    <div class="flex-center" style="min-height:200px">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── DATABASE PANEL ─── -->
+            <div id="panel-db" style="display:none">
+                <div class="admin-header"><h1>Database Operations</h1></div>
+                <div style="display:grid;gap:var(--space-md)">
+                    <div class="chart-wrap">
+                        <h2 style="margin-bottom:var(--space-md)">Materialized Views</h2>
+                        <p style="color:var(--clr-text-muted);font-size:0.9rem;margin-bottom:var(--space-lg)">
+                            Materialized views cache expensive aggregate queries. Refresh them to update analytics data.
+                        </p>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-md)">
+                            ${[
+                                ['mv_trending_content', 'Trending now by 7-day views'],
+                                ['mv_genre_stats', 'Genre popularity & stats'],
+                                ['mv_top_by_genre', 'Top content per genre'],
+                                ['mv_platform_stats', 'Platform-wide KPIs'],
+                            ].map(([name, desc]) => `
+                                <div style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);border-radius:var(--radius-md);padding:var(--space-md)">
+                                    <p style="font-family:monospace;font-size:0.85rem;color:var(--clr-primary);margin-bottom:4px">${name}</p>
+                                    <p style="font-size:0.8rem;color:var(--clr-text-muted)">${desc}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button class="btn btn-primary" style="margin-top:var(--space-lg)" onclick="refreshViews()">
+                            🔄 Refresh All Materialized Views
+                        </button>
+                        <div id="refresh-result" style="margin-top:var(--space-md);font-size:0.875rem;color:var(--clr-success)"></div>
+                    </div>
+
+                    <div class="chart-wrap">
+                        <h2 style="margin-bottom:var(--space-md)">Index Performance</h2>
+                        <p style="color:var(--clr-text-muted);font-size:0.9rem;margin-bottom:var(--space-lg)">
+                            This project uses 25+ indexes including B-Tree, GIN (full-text), and partial indexes.
+                        </p>
+                        <div style="font-family:monospace;font-size:0.8rem;background:rgba(0,0,0,0.3);border-radius:var(--radius-md);padding:var(--space-lg);color:#46d369;line-height:2">
+                            <p>idx_content_search_vector  → GIN    │ Full-text search</p>
+                            <p>idx_content_title_trgm     → GIN    │ Fuzzy matching</p>
+                            <p>idx_content_browse         → B-Tree │ type+published+rating</p>
+                            <p>idx_watch_history_profile  → B-Tree │ Continue watching</p>
+                            <p>idx_content_published      → Partial │ Only published rows</p>
+                            <p>idx_mv_trending_content_id → UNIQUE │ Concurrent MV refresh</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── ONEDRIVE PANEL ─── -->
+            <div id="panel-onedrive" style="display:none">
+                <div class="admin-header">
+                    <h1>OneDrive Integration</h1>
+                    <button class="btn btn-primary btn-sm" id="onedrive-connect-btn" onclick="connectOneDrive()">🔗 Connect OneDrive</button>
+                </div>
+
+                <div class="chart-wrap" id="onedrive-status">
+                    <h2 style="margin-bottom:var(--space-md)">Connection Status</h2>
+                    <div id="od-status-content">
+                        <p style="color:var(--clr-text-muted)">Checking OneDrive connection...</p>
+                    </div>
+                </div>
+
+                <div class="chart-wrap" id="onedrive-browser" style="display:none">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
+                        <h2>📁 File Browser</h2>
+                        <div style="display:flex;gap:var(--space-sm);align-items:center">
+                            <button class="btn btn-ghost btn-sm" id="od-back-btn" onclick="odNavigateBack()" style="display:none">← Back</button>
+                            <span id="od-current-path" style="font-size:0.8rem;color:var(--clr-text-muted);font-family:monospace">/</span>
+                        </div>
+                    </div>
+                    <div id="od-file-list" style="display:grid;gap:4px;"></div>
+                </div>
+
+                <div class="chart-wrap">
+                    <h2 style="margin-bottom:var(--space-md)">How to Set Up OneDrive</h2>
+                    <ol style="color:var(--clr-text);line-height:2;padding-left:20px;font-size:0.9rem">
+                        <li>Go to <a href="https://portal.azure.com" target="_blank" style="color:var(--clr-primary)">portal.azure.com</a> → Azure AD → App registrations</li>
+                        <li>Create a new registration (name: SEEN POINT)</li>
+                        <li>Add redirect URI: <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px">{backend_url}/api/onedrive/callback</code></li>
+                        <li>Copy Client ID → set as <code>ONEDRIVE_CLIENT_ID</code> in .env</li>
+                        <li>Create a Client Secret → set as <code>ONEDRIVE_CLIENT_SECRET</code></li>
+                        <li>API Permissions → Microsoft Graph → <code>Files.Read.All</code> (Delegated)</li>
+                        <li>Click "Connect OneDrive" above to complete the OAuth flow</li>
+                    </ol>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Content Modal -->
+    <div class="modal-overlay" id="add-content-modal">
+        <div class="modal" style="max-width:700px">
+            <button class="modal-close" onclick="closeModal('add-content-modal')">✕</button>
+            <div style="padding:var(--space-xl)">
+                <h2 style="margin-bottom:var(--space-xl)">Add New Content</h2>
+                <form id="add-content-form">
+                    <div class="admin-form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Title *</label>
+                            <input class="form-input" name="title" placeholder="Movie or Show title" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Type *</label>
+                            <select class="form-input" name="contentType" required>
+                                <option value="movie">Movie</option>
+                                <option value="series">Series</option>
+                                <option value="documentary">Documentary</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Release Year</label>
+                            <input class="form-input" name="releaseYear" type="number" placeholder="2024" min="1900" max="2100">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Duration (minutes)</label>
+                            <input class="form-input" name="durationMin" type="number" placeholder="120">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Maturity Rating</label>
+                            <select class="form-input" name="maturityRating">
+                                <option>G</option><option>PG</option><option selected>PG-13</option>
+                                <option>R</option><option>NC-17</option><option>TV-MA</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Language</label>
+                            <input class="form-input" name="language" value="en" placeholder="en">
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1">
+                            <label class="form-label">Poster URL</label>
+                            <input class="form-input" name="posterUrl" placeholder="https://image.tmdb.org/...">
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1">
+                            <label class="form-label">Backdrop URL</label>
+                            <input class="form-input" name="backdropUrl" placeholder="https://...">
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1">
+                            <label class="form-label">Synopsis</label>
+                            <textarea class="form-input" name="synopsis" style="min-height:80px" placeholder="Brief description..."></textarea>
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1">
+                            <label class="form-label">OneDrive File ID <span style="color:var(--clr-text-dim);font-weight:400">(link a video file)</span></label>
+                            <div style="display:flex;gap:8px">
+                                <input class="form-input" name="onedriveFileId" placeholder="OneDrive file ID (from File Browser)" style="flex:1">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.querySelector('[data-panel=onedrive]').click()" title="Open OneDrive Browser">☁️ Browse</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:var(--space-sm);align-items:center;margin-top:var(--space-md)">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:0.875rem;cursor:pointer">
+                            <input type="checkbox" name="isPublished"> Publish immediately
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:0.875rem;cursor:pointer">
+                            <input type="checkbox" name="isFeatured"> Feature on homepage
+                        </label>
+                    </div>
+                    <div style="display:flex;gap:var(--space-md);justify-content:flex-end;margin-top:var(--space-xl)">
+                        <button type="button" class="btn btn-ghost" onclick="closeModal('add-content-modal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Content</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script>
+    (() => {
+        // Redirect non-admins
+        if (!auth.isLoggedIn() || !auth.isAdmin()) {
+            window.location.href = '/pages/login.html';
+            return;
+        }
+
+        // ─── Panel navigation ─────────────────────────────────────────
+        const panels = ['dashboard', 'content', 'users', 'analytics', 'onedrive', 'db'];
+        const panelLoaders = { dashboard: loadDashboard, content: loadContentPanel, users: loadUsers, analytics: loadAnalytics, onedrive: loadOneDrive, db: () => {} };
+
+        document.querySelectorAll('.sidebar-item[data-panel]').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+                item.classList.add('active');
+                panels.forEach(p => {
+                    document.getElementById(`panel-${p}`).style.display = p === item.dataset.panel ? 'block' : 'none';
+                });
+                panelLoaders[item.dataset.panel]?.();
+            });
+        });
+
+        // ─── Dashboard ────────────────────────────────────────────────
+        async function loadDashboard() {
+            try {
+                const { data } = await api.get('/admin/analytics');
+                const { stats, topContent, genreStats, dailyViews } = data;
+
+                // KPI cards
+                document.getElementById('kpi-cards').innerHTML = [
+                    ['Total Users',       utils.formatNumber(stats.total_users),   `+${stats.new_users_30d} this month`, 'up'],
+                    ['Paying Users',      utils.formatNumber(stats.paying_users),  `${Math.round(stats.paying_users/stats.total_users*100)}% conv.`, 'up'],
+                    ['Total Content',     utils.formatNumber(stats.total_content), `${stats.total_movies} movies · ${stats.total_series} series`],
+                    ['Views (24h)',        utils.formatNumber(stats.views_24h),     `${utils.formatNumber(stats.views_7d)} this week`, 'up'],
+                ].map(([label, value, change, dir]) => `
+                    <div class="stat-card">
+                        <div class="stat-label">${label}</div>
+                        <div class="stat-value">${value}</div>
+                        ${change ? `<div class="stat-change ${dir || ''}">${dir === 'up' ? '↑' : ''} ${change}</div>` : ''}
+                    </div>
+                `).join('');
+
+                // Daily views bar chart
+                const maxViews = Math.max(...dailyViews.map(d => d.views), 1);
+                document.getElementById('views-chart').innerHTML = dailyViews.map(d => {
+                    const pct = (d.views / maxViews * 100).toFixed(1);
+                    const date = new Date(d.day).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+                    return `
+                        <div class="bar-col" title="${date}: ${d.views} views">
+                            <div class="bar-val">${utils.formatNumber(d.views)}</div>
+                            <div class="bar" style="height:${pct}%"></div>
+                            <div class="bar-label">${date}</div>
+                        </div>
+                    `;
+                }).join('') || '<p class="text-muted">No data yet</p>';
+
+                // Genre chart
+                const maxViews2 = Math.max(...genreStats.map(g => g.total_views || 0), 1);
+                document.getElementById('genre-chart').innerHTML = genreStats.slice(0, 8).map(g => `
+                    <div class="genre-bar">
+                        <span class="genre-bar-label">${g.genre_name}</span>
+                        <div class="genre-bar-track">
+                            <div class="genre-bar-fill" style="width:${((g.total_views||0)/maxViews2*100).toFixed(1)}%"></div>
+                        </div>
+                        <span class="genre-bar-count">${utils.formatNumber(g.total_views||0)}</span>
+                    </div>
+                `).join('');
+
+                // Top content table
+                document.getElementById('top-content-tbody').innerHTML = topContent.map((c, i) => `
+                    <tr>
+                        <td style="color:var(--clr-text-muted);font-weight:600">${i + 1}</td>
+                        <td>
+                            <div style="display:flex;gap:var(--space-sm);align-items:center">
+                                <img class="table-poster" src="${c.poster_url || ''}" onerror="this.style.display='none'" alt="">
+                                <a href="/pages/detail.html?id=${c.id}" style="color:var(--clr-white);font-weight:500" target="_blank">${c.title}</a>
+                            </div>
+                        </td>
+                        <td><span class="badge badge-info">${c.content_type}</span></td>
+                        <td>${utils.formatNumber(c.total_views)}</td>
+                        <td>★ ${parseFloat(c.avg_rating||0).toFixed(1)}</td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                utils.toast('Failed to load analytics: ' + err.message, 'error');
+            }
+        }
+
+        // ─── Content Panel ────────────────────────────────────────────
+        let contentPage = 1;
+        async function loadContentPanel() {
+            const type = document.getElementById('content-type-filter').value;
+            const pub  = document.getElementById('content-pub-filter').value;
+            const params = new URLSearchParams({ page: contentPage, limit: 20 });
+            if (type) params.set('type', type);
+            if (pub !== '') params.set('published', pub);
+
+            try {
+                const { data, pagination } = await api.get(`/admin/content?${params}`);
+
+                document.getElementById('content-tbody').innerHTML = data.map(c => `
+                    <tr>
+                        <td><img class="table-poster" src="${c.poster_url||''}" onerror="this.style.display='none'" alt=""></td>
+                        <td style="font-weight:500">${c.title}</td>
+                        <td>${c.content_type}</td>
+                        <td>${c.release_year || '—'}</td>
+                        <td>
+                            <span class="badge ${c.is_published ? 'badge-success' : 'badge-warning'}">
+                                ${c.is_published ? 'Published' : 'Draft'}
+                            </span>
+                        </td>
+                        <td>${utils.formatNumber(c.total_views)}</td>
+                        <td>★ ${parseFloat(c.avg_rating||0).toFixed(1)}</td>
+                        <td>
+                            <div style="display:flex;gap:4px">
+                                <button class="btn btn-ghost btn-sm" onclick="togglePublish('${c.id}',${c.is_published})">
+                                    ${c.is_published ? 'Unpublish' : 'Publish'}
+                                </button>
+                                <button class="btn btn-sm" style="background:rgba(255,68,68,0.15);color:var(--clr-error)" onclick="deleteContent('${c.id}','${c.title}')">
+                                    Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Pagination
+                const pEl = document.getElementById('content-pagination');
+                if (pagination.totalPages > 1) {
+                    pEl.innerHTML = `
+                        <button class="page-btn" ${contentPage===1?'disabled':''} onclick="contentPage--;loadContentPanel()">‹</button>
+                        <span style="color:var(--clr-text-muted);font-size:0.875rem">Page ${contentPage} / ${pagination.totalPages}</span>
+                        <button class="page-btn" ${contentPage===pagination.totalPages?'disabled':''} onclick="contentPage++;loadContentPanel()">›</button>
+                    `;
+                }
+            } catch (err) { utils.toast('Error: ' + err.message, 'error'); }
+        }
+
+        window.togglePublish = async (id, current) => {
+            try {
+                await api.put(`/admin/content/${id}`, { isPublished: !current });
+                utils.toast(`Content ${!current ? 'published' : 'unpublished'}`, 'success');
+                loadContentPanel();
+            } catch (err) { utils.toast(err.message, 'error'); }
+        };
+
+        window.deleteContent = async (id, title) => {
+            if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+            try {
+                await api.delete(`/admin/content/${id}`);
+                utils.toast('Content deleted', 'success');
+                loadContentPanel();
+            } catch (err) { utils.toast(err.message, 'error'); }
+        };
+
+        // ─── Users Panel ──────────────────────────────────────────────
+        async function loadUsers() {
+            try {
+                const { data } = await api.get('/admin/users?limit=30');
+                document.getElementById('users-tbody').innerHTML = data.map(u => `
+                    <tr>
+                        <td style="font-weight:500">${u.full_name} ${u.is_admin ? '<span class="badge badge-warning">Admin</span>' : ''}</td>
+                        <td style="color:var(--clr-text-muted)">${u.email}</td>
+                        <td>${u.plan || '<span class="text-muted">None</span>'}</td>
+                        <td><span class="badge ${u.is_active ? 'badge-success' : 'badge-error'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+                        <td style="color:var(--clr-text-muted)">${u.last_login ? utils.formatDate(u.last_login) : '—'}</td>
+                        <td style="color:var(--clr-text-muted)">${utils.formatDate(u.created_at)}</td>
+                    </tr>
+                `).join('');
+            } catch (err) { utils.toast('Error loading users: ' + err.message, 'error'); }
+        }
+
+        // ─── Analytics Panel ──────────────────────────────────────────
+        async function loadAnalytics() {
+            try {
+                const { data } = await api.get('/admin/analytics');
+                document.getElementById('analytics-content').innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Views (All Time)</div>
+                            <div class="stat-value">${utils.formatNumber(data.stats.views_7d * 52)}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Ratings</div>
+                            <div class="stat-value">${utils.formatNumber(data.stats.total_ratings)}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Views (7 days)</div>
+                            <div class="stat-value">${utils.formatNumber(data.stats.views_7d)}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">New Users (30d)</div>
+                            <div class="stat-value">${utils.formatNumber(data.stats.new_users_30d)}</div>
+                        </div>
+                    </div>
+                    <div class="chart-wrap" style="margin-top:var(--space-md)">
+                        <p class="chart-title">Recent Users</p>
+                        <table class="admin-table">
+                            <thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Joined</th></tr></thead>
+                            <tbody>
+                                ${data.recentUsers.map(u => `
+                                    <tr>
+                                        <td>${u.full_name}</td>
+                                        <td style="color:var(--clr-text-muted)">${u.email}</td>
+                                        <td>${u.plan || '—'}</td>
+                                        <td style="color:var(--clr-text-muted)">${utils.formatDate(u.created_at)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (err) { document.getElementById('analytics-content').innerHTML = `<p class="text-error">Failed: ${err.message}</p>`; }
+        }
+
+        // ─── Add Content Modal ────────────────────────────────────────
+        window.openAddContentModal = () => {
+            document.getElementById('add-content-modal').classList.add('open');
+        };
+        window.closeModal = (id) => {
+            document.getElementById(id).classList.remove('open');
+        };
+
+        document.getElementById('add-content-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const body = Object.fromEntries(fd.entries());
+            body.isPublished = fd.get('isPublished') === 'on';
+            body.isFeatured  = fd.get('isFeatured') === 'on';
+            body.releaseYear = body.releaseYear ? parseInt(body.releaseYear) : undefined;
+            body.durationMin = body.durationMin ? parseInt(body.durationMin) : undefined;
+
+            try {
+                await api.post('/admin/content', body);
+                utils.toast('Content added! 🎬', 'success');
+                closeModal('add-content-modal');
+                contentPage = 1;
+                loadContentPanel();
+            } catch (err) { utils.toast('Error: ' + err.message, 'error'); }
+        });
+
+        // ─── Refresh Views ────────────────────────────────────────────
+        window.refreshViews = async function() {
+            const btn = document.getElementById('refresh-views-btn') || event?.target;
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Refreshing...'; }
+            try {
+                const { message, durationMs } = await api.post('/admin/refresh-views', {});
+                utils.toast(`Refreshed in ${durationMs}ms ✅`, 'success');
+                document.getElementById('refresh-result').textContent = `✅ ${message} (${durationMs}ms)`;
+            } catch (err) { utils.toast('Refresh failed: ' + err.message, 'error'); }
+            finally { if (btn) { btn.disabled = false; btn.textContent = '🔄 Refresh Materialized Views'; } }
+        };
+
+        document.getElementById('refresh-views-btn').addEventListener('click', refreshViews);
+
+        // ─── OneDrive Panel ───────────────────────────────────────────
+        let odFolderStack = ['root'];
+
+        async function loadOneDrive() {
+            const statusEl = document.getElementById('od-status-content');
+            try {
+                const res = await api.get('/onedrive/status');
+                if (res.connected) {
+                    statusEl.innerHTML = `
+                        <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-sm)">
+                            <span class="badge badge-success">Connected</span>
+                            <span style="color:var(--clr-text-muted);font-size:0.875rem">${res.account || 'Microsoft account'}</span>
+                        </div>
+                        <p style="font-size:0.8rem;color:var(--clr-text-muted)">Token expires: ${res.expiresAt ? new Date(res.expiresAt).toLocaleString() : 'Unknown'}</p>
+                    `;
+                    document.getElementById('onedrive-connect-btn').textContent = '✅ Connected';
+                    document.getElementById('onedrive-browser').style.display = 'block';
+                    loadOneDriveFolder('root');
+                } else {
+                    statusEl.innerHTML = `<p style="color:var(--clr-warning)">⚠️ OneDrive is not connected. Click "Connect OneDrive" to set up the integration.</p>`;
+                }
+            } catch {
+                statusEl.innerHTML = `<p style="color:var(--clr-text-muted)">OneDrive integration requires Azure AD credentials in .env</p>`;
+            }
+        }
+
+        window.connectOneDrive = async () => {
+            try {
+                const { authUrl } = await api.get('/onedrive/auth');
+                if (authUrl) window.open(authUrl, '_blank', 'width=600,height=700');
+                else utils.toast('Auth URL not available — check .env configuration', 'error');
+            } catch (err) { utils.toast('OneDrive setup error: ' + err.message, 'error'); }
+        };
+
+        async function loadOneDriveFolder(folderId) {
+            const listEl = document.getElementById('od-file-list');
+            listEl.innerHTML = '<div class="spinner" style="width:24px;height:24px;margin:20px auto"></div>';
+            try {
+                const { data } = await api.get(`/onedrive/files?folderId=${folderId}`);
+                document.getElementById('od-back-btn').style.display = odFolderStack.length > 1 ? 'inline-flex' : 'none';
+
+                listEl.innerHTML = data.map(f => {
+                    const isFolder = !!f.folder;
+                    const size = f.size ? (f.size / 1024 / 1024).toFixed(1) + ' MB' : '';
+                    const icon = isFolder ? '📁' : (f.name.match(/\.(mp4|mkv|avi|mov|webm)$/i) ? '🎬' : '📄');
+                    return `
+                        <div style="display:flex;align-items:center;gap:var(--space-sm);padding:8px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.2s"
+                             onmouseenter="this.style.background='rgba(255,255,255,0.04)'"
+                             onmouseleave="this.style.background='transparent'"
+                             onclick="${isFolder ? `odNavigateInto('${f.id}','${f.name.replace(/'/g, "\\'")}')` : `odSelectFile('${f.id}','${f.name.replace(/'/g, "\\'")}')` }">
+                            <span style="font-size:1.2rem">${icon}</span>
+                            <span style="flex:1;font-size:0.9rem;color:var(--clr-text)">${f.name}</span>
+                            ${!isFolder ? `<span style="font-size:0.75rem;color:var(--clr-text-muted)">${size}</span>` : ''}
+                            ${!isFolder ? `<button class="btn btn-primary btn-sm" style="font-size:0.7rem;padding:4px 10px" onclick="event.stopPropagation();odCopyId('${f.id}')">Copy ID</button>` : ''}
+                        </div>`;
+                }).join('') || '<p style="color:var(--clr-text-muted);padding:20px;text-align:center">Folder is empty</p>';
+            } catch (err) {
+                listEl.innerHTML = `<p style="color:var(--clr-error);padding:12px">Failed to load: ${err.message}</p>`;
+            }
+        }
+
+        window.odNavigateInto = (folderId, name) => {
+            odFolderStack.push(folderId);
+            document.getElementById('od-current-path').textContent += name + '/';
+            loadOneDriveFolder(folderId);
+        };
+
+        window.odNavigateBack = () => {
+            if (odFolderStack.length <= 1) return;
+            odFolderStack.pop();
+            const pathEl = document.getElementById('od-current-path');
+            const parts = pathEl.textContent.split('/').filter(Boolean);
+            parts.pop();
+            pathEl.textContent = '/' + (parts.length ? parts.join('/') + '/' : '');
+            loadOneDriveFolder(odFolderStack[odFolderStack.length - 1]);
+        };
+
+        window.odSelectFile = (fileId, fileName) => {
+            const input = document.querySelector('input[name="onedriveFileId"]');
+            if (input) input.value = fileId;
+            utils.toast(`Selected: ${fileName}`, 'success');
+            // Switch to content panel
+            document.querySelector('[data-panel="content"]').click();
+        };
+
+        window.odCopyId = (fileId) => {
+            navigator.clipboard?.writeText(fileId).then(() => utils.toast('File ID copied!', 'success'));
+        };
+
+        // ─── Init ─────────────────────────────────────────────────────
+        loadDashboard();
+    })();
+    </script>
+</body>
+</html>

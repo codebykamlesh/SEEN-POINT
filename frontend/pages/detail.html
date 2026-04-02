@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading... — SEEN POINT</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        body { background: var(--clr-bg); }
+
+        /* Detail hero */
+        .detail-hero {
+            position: relative;
+            height: 70vh;
+            min-height: 500px;
+            overflow: hidden;
+        }
+        .detail-backdrop {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+        }
+        .detail-gradient {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(10,10,10,0.3) 0%,
+                rgba(10,10,10,0.6) 50%,
+                var(--clr-bg) 100%
+            ), linear-gradient(to right, rgba(10,10,10,0.9) 0%, transparent 50%);
+        }
+        .detail-hero-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: var(--space-xl);
+            display: flex;
+            gap: var(--space-xl);
+            align-items: flex-end;
+        }
+        .detail-poster {
+            width: 200px;
+            flex-shrink: 0;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            display: none; /* Hidden on mobile */
+        }
+        @media (min-width: 768px) { .detail-poster { display: block; } }
+
+        .detail-info { flex: 1; }
+        .detail-title { font-size: clamp(1.8rem, 4vw, 3.5rem); margin-bottom: var(--space-sm); }
+        .detail-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            font-size: 0.9rem;
+            color: var(--clr-text-muted);
+            margin-bottom: var(--space-md);
+        }
+        .detail-rating { color: #f5c518; font-weight: 700; font-size: 1.1rem; }
+        .detail-synopsis {
+            font-size: 1rem;
+            color: var(--clr-text);
+            line-height: 1.7;
+            margin-bottom: var(--space-lg);
+            max-width: 660px;
+        }
+        .detail-actions { display: flex; gap: var(--space-md); flex-wrap: wrap; }
+
+        /* Content body */
+        .detail-body {
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 0 var(--space-xl) var(--space-xxl);
+        }
+
+        /* Tabs */
+        .detail-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--clr-border);
+            margin-bottom: var(--space-xl);
+        }
+        .detail-tab {
+            padding: var(--space-sm) var(--space-lg);
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--clr-text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .detail-tab:hover { color: var(--clr-white); }
+        .detail-tab.active { color: var(--clr-white); border-bottom-color: var(--clr-primary); }
+
+        /* Cast */
+        .cast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: var(--space-md);
+        }
+        .cast-item { text-align: center; }
+        .cast-photo {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto var(--space-xs);
+            background: var(--clr-bg-3);
+            border: 2px solid var(--clr-border);
+        }
+        .cast-name { font-size: 0.8rem; font-weight: 600; color: var(--clr-white); }
+        .cast-char { font-size: 0.72rem; color: var(--clr-text-muted); }
+
+        /* Episodes */
+        .episode-item {
+            display: flex;
+            gap: var(--space-md);
+            padding: var(--space-md);
+            border-bottom: 1px solid var(--clr-border);
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: var(--radius-md);
+        }
+        .episode-item:hover { background: rgba(255,255,255,0.04); }
+        .episode-thumb {
+            width: 160px; height: 90px;
+            flex-shrink: 0;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            background: var(--clr-bg-3);
+        }
+        .episode-num { font-size: 0.75rem; color: var(--clr-text-muted); }
+        .episode-title { font-weight: 600; margin: 2px 0; }
+        .episode-synopsis { font-size: 0.875rem; color: var(--clr-text-muted); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* Reviews */
+        .review-item {
+            padding: var(--space-lg) 0;
+            border-bottom: 1px solid var(--clr-border);
+        }
+        .review-header { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+        .review-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .review-name { font-weight: 600; }
+        .review-date { font-size: 0.8rem; color: var(--clr-text-muted); }
+        .review-body { font-size: 0.9rem; line-height: 1.7; color: var(--clr-text); }
+
+        /* Rate widget */
+        .star-rating {
+            display: flex;
+            gap: 4px;
+        }
+        .star {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--clr-text-dim);
+            transition: color 0.15s, transform 0.15s;
+        }
+        .star:hover, .star.active { color: #f5c518; transform: scale(1.2); }
+
+        /* Mock video player */
+        .video-player {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .video-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-md);
+        }
+        .play-large {
+            width: 80px; height: 80px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .play-large:hover { transform: scale(1.1); background: white; }
+        .play-large svg { width: 36px; margin-left: 4px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar scrolled">
+        <a href="/index.html" class="navbar-logo">SEEN POINT</a>
+        <div class="navbar-actions" style="margin-left:auto">
+            <button onclick="history.back()" class="btn btn-ghost btn-sm">
+                ← Back
+            </button>
+            <div id="user-menu"></div>
+        </div>
+    </nav>
+
+    <!-- Loading state -->
+    <div id="loading-state" style="min-height:100vh;display:flex;align-items:center;justify-content:center">
+        <div class="spinner" style="width:48px;height:48px"></div>
+    </div>
+
+    <!-- Main detail content (hidden until loaded) -->
+    <div id="detail-content" style="display:none">
+
+        <!-- ─── Hero ────────────────────────────────────────────── -->
+        <div class="detail-hero" id="detail-hero">
+            <div class="detail-backdrop" id="detail-backdrop"></div>
+            <div class="detail-gradient"></div>
+            <div class="detail-hero-content">
+                <img class="detail-poster" id="detail-poster" src="" alt="">
+                <div class="detail-info page-enter">
+                    <h1 class="detail-title" id="detail-title"></h1>
+                    <div class="detail-meta" id="detail-meta"></div>
+                    <div id="detail-genres" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-md)"></div>
+                    <p class="detail-synopsis" id="detail-synopsis"></p>
+                    <div class="detail-actions" id="detail-actions"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Body ────────────────────────────────────────────── -->
+        <div class="detail-body">
+
+            <!-- Video Player (mock) -->
+            <div id="video-section" style="margin-bottom:var(--space-xl);display:none">
+                <div class="video-player" id="video-player">
+                    <img id="video-backdrop" src="" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.3">
+                    <div class="video-overlay">
+                        <div class="play-large" id="play-btn">
+                            <svg viewBox="0 0 24 24" fill="#333"><polygon points="5,3 19,12 5,21"/></svg>
+                        </div>
+                        <p style="color:white;font-size:0.9rem" id="video-label">Click to play</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="detail-tabs" id="detail-tabs">
+                <div class="detail-tab active" data-tab="overview">Overview</div>
+                <div class="detail-tab" data-tab="cast">Cast & Crew</div>
+                <div class="detail-tab" id="episodes-tab-btn" data-tab="episodes" style="display:none">Episodes</div>
+                <div class="detail-tab" data-tab="reviews">Reviews</div>
+                <div class="detail-tab" data-tab="similar">More Like This</div>
+            </div>
+
+            <!-- Overview tab -->
+            <div id="tab-overview" class="tab-content page-enter">
+                <div style="display:grid;grid-template-columns:1fr auto;gap:var(--space-xl);align-items:start">
+                    <div>
+                        <h2 style="font-size:1.1rem;margin-bottom:var(--space-sm)">Synopsis</h2>
+                        <p id="full-synopsis" style="color:var(--clr-text);line-height:1.8;max-width:700px"></p>
+
+                        <!-- Rating widget -->
+                        <div style="margin-top:var(--space-xl)">
+                            <h2 style="font-size:1.1rem;margin-bottom:var(--space-md)">Rate this</h2>
+                            <div class="star-rating" id="star-rating">
+                                <!-- Stars 1-10 shown as 5 with hover states -->
+                            </div>
+                            <p id="your-rating-label" style="font-size:0.875rem;color:var(--clr-text-muted);margin-top:8px"></p>
+                        </div>
+                    </div>
+                    <div style="min-width:200px">
+                        <div style="background:var(--clr-surface);border:1px solid var(--clr-border);border-radius:var(--radius-lg);padding:var(--space-lg)">
+                            <p style="font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;color:var(--clr-text-muted);margin-bottom:var(--space-md)">Info</p>
+                            <div id="detail-info-panel" style="display:grid;gap:var(--space-sm)"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cast tab -->
+            <div id="tab-cast" class="tab-content" style="display:none">
+                <div class="cast-grid" id="cast-grid"></div>
+            </div>
+
+            <!-- Episodes tab -->
+            <div id="tab-episodes" class="tab-content" style="display:none">
+                <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-lg)">
+                    <label style="color:var(--clr-text-muted)">Season:</label>
+                    <select class="filter-select" id="season-select"></select>
+                </div>
+                <div id="episodes-list"></div>
+            </div>
+
+            <!-- Reviews tab -->
+            <div id="tab-reviews" class="tab-content" style="display:none">
+                <div id="reviews-list"></div>
+                <div style="margin-top:var(--space-xl)" id="write-review"></div>
+            </div>
+
+            <!-- Similar tab -->
+            <div id="tab-similar" class="tab-content" style="display:none">
+                <div class="content-grid" id="similar-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script>
+    (async () => {
+        const user    = auth.getUser();
+        const profile = auth.getProfile();
+        const id      = new URLSearchParams(window.location.search).get('id');
+        const autoplay = new URLSearchParams(window.location.search).get('autoplay');
+
+        // User nav
+        document.getElementById('user-menu').innerHTML = user
+            ? `<span style="font-size:0.875rem;color:var(--clr-text-muted)">${user.fullName.split(' ')[0]}</span>`
+            : `<a href="/pages/login.html" class="btn btn-primary btn-sm">Sign In</a>`;
+
+        if (!id) {
+            window.location.href = '/pages/browse.html';
+            return;
+        }
+
+        // ─── Load Content Detail ──────────────────────────────────────
+        let content;
+        try {
+            const res = await api.get(`/content/${id}`);
+            content = res.data;
+        } catch (err) {
+            document.getElementById('loading-state').innerHTML = `
+                <div style="text-align:center;color:var(--clr-text-muted)">
+                    <div style="font-size:4rem;margin-bottom:16px">😕</div>
+                    <h2>Content not found</h2>
+                    <a href="/pages/browse.html" class="btn btn-primary" style="margin-top:24px">Browse Content</a>
+                </div>
+            `;
+            return;
+        }
+
+        // Update page title
+        document.title = `${content.title} — SEEN POINT`;
+
+        // ─── Render Hero ─────────────────────────────────────────────
+        document.getElementById('detail-backdrop').style.backgroundImage =
+            `url('${content.backdrop_url || content.poster_url}')`;
+        document.getElementById('detail-poster').src = content.poster_url || '';
+        document.getElementById('detail-poster').alt = content.title;
+        document.getElementById('detail-title').textContent = content.title;
+
+        // Meta
+        const genres = content.genres || [];
+        document.getElementById('detail-meta').innerHTML = `
+            ${content.avg_rating ? `<span class="detail-rating">★ ${parseFloat(content.avg_rating).toFixed(1)}</span> <span>(${utils.formatNumber(content.total_ratings)} ratings)</span>` : ''}
+            ${content.release_year ? `<span>${content.release_year}</span>` : ''}
+            ${content.duration_min ? `<span>${utils.formatRuntime(content.duration_min)}</span>` : ''}
+            ${content.maturity_rating ? `<span class="maturity-badge">${content.maturity_rating}</span>` : ''}
+            <span>👁 ${utils.formatNumber(content.total_views)} views</span>
+        `;
+
+        document.getElementById('detail-genres').innerHTML = genres
+            .map(g => `<span class="genre-badge" onclick="window.location='/pages/browse.html?genre=${g.slug}'">${g.name}</span>`)
+            .join('');
+
+        document.getElementById('detail-synopsis').textContent = content.synopsis || '';
+        document.getElementById('full-synopsis').textContent   = content.synopsis || '';
+
+        // Actions
+        document.getElementById('detail-actions').innerHTML = `
+            <button class="btn btn-primary btn-lg" id="play-main-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                Play
+            </button>
+            <button class="btn btn-secondary btn-lg watchlist-btn" id="detail-watchlist-btn">
+                + My List
+            </button>
+            ${content.trailer_url ? `<a href="${content.trailer_url}" target="_blank" class="btn btn-ghost btn-lg">▶ Trailer</a>` : ''}
+        `;
+
+        document.getElementById('play-main-btn').addEventListener('click', () => {
+            window.location.href = `/pages/player.html?id=${id}&autoplay=true`;
+        });
+        document.getElementById('detail-watchlist-btn').addEventListener('click', (e) => toggleWatchlist(e, id));
+
+        // Info panel
+        document.getElementById('detail-info-panel').innerHTML = [
+            ['Type',     content.content_type],
+            ['Language', content.language?.toUpperCase()],
+            ['Country',  content.country],
+            ['Rating',   content.maturity_rating],
+            ['Runtime',  content.duration_min ? utils.formatRuntime(content.duration_min) : null],
+            ['IMDb',     content.imdb_id ? `<a href="https://imdb.com/title/${content.imdb_id}" target="_blank" style="color:var(--clr-primary)">${content.imdb_id}</a>` : null],
+        ].filter(([, v]) => v).map(([k, v]) => `
+            <div>
+                <p style="font-size:0.75rem;color:var(--clr-text-muted)">${k}</p>
+                <p style="font-size:0.875rem;font-weight:500">${v}</p>
+            </div>
+        `).join('');
+
+        // ─── Video Player ─────────────────────────────────────────────
+        function showVideoPlayer() {
+            const section = document.getElementById('video-section');
+            section.style.display = 'block';
+            document.getElementById('video-backdrop').src = content.backdrop_url || content.poster_url;
+            document.getElementById('video-label').textContent = `Now Playing: ${content.title}`;
+            section.scrollIntoView({ behavior: 'smooth' });
+
+            document.getElementById('play-btn').addEventListener('click', () => {
+                document.getElementById('video-label').textContent = '🎬 Playing... (Demo – video streaming simulation)';
+                document.getElementById('play-btn').style.display = 'none';
+                if (profile) {
+                    api.post('/user/watch-history', {
+                        profileId: profile.id,
+                        contentId: id,
+                        progressSeconds: 30,
+                        totalSeconds: (content.duration_min || 120) * 60
+                    }).catch(() => {});
+                }
+            });
+        }
+
+        // Autoplay redirects directly to player
+        if (autoplay === 'true') {
+            window.location.href = `/pages/player.html?id=${id}&autoplay=true`;
+        }
+
+        // ─── Tabs ─────────────────────────────────────────────────────
+        const tabs = {
+            overview: document.getElementById('tab-overview'),
+            cast:     document.getElementById('tab-cast'),
+            episodes: document.getElementById('tab-episodes'),
+            reviews:  document.getElementById('tab-reviews'),
+            similar:  document.getElementById('tab-similar'),
+        };
+
+        document.querySelectorAll('.detail-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.detail-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                Object.values(tabs).forEach(t => t.style.display = 'none');
+                const t = tabs[btn.dataset.tab];
+                if (t) { t.style.display = 'block'; t.classList.add('page-enter'); }
+            });
+        });
+
+        // ─── Cast ─────────────────────────────────────────────────────
+        const cast = content.cast || [];
+        if (cast.length > 0) {
+            document.getElementById('cast-grid').innerHTML = cast.map(p => `
+                <div class="cast-item">
+                    <img class="cast-photo" src="${p.photo_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed='+p.id}" alt="${p.name}" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}'">
+                    <div class="cast-name">${p.name}</div>
+                    <div class="cast-char">${p.character || p.role}</div>
+                </div>
+            `).join('');
+        } else {
+            document.getElementById('cast-grid').innerHTML = '<p class="text-muted">No cast information available.</p>';
+        }
+
+        // ─── Episodes (for series) ────────────────────────────────────
+        if (content.content_type === 'series') {
+            document.getElementById('episodes-tab-btn').style.display = 'block';
+            const seasons = content.seasons || [];
+
+            const seasonSelect = document.getElementById('season-select');
+            seasons.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.season_number;
+                opt.textContent = `Season ${s.season_number}${s.title ? ' – ' + s.title : ''} (${s.episode_count} eps)`;
+                seasonSelect.appendChild(opt);
+            });
+
+            async function loadEpisodes(seasonNum) {
+                try {
+                    const { data } = await api.get(`/content/${id}/episodes?season=${seasonNum}`);
+                    document.getElementById('episodes-list').innerHTML = data.map(ep => `
+                        <div class="episode-item" onclick="document.getElementById('play-main-btn').click()">
+                            <img class="episode-thumb" 
+                                 src="${ep.thumbnail_url || content.backdrop_url || ''}" 
+                                 onerror="this.style.display='none'" alt="">
+                            <div>
+                                <p class="episode-num">Episode ${ep.episode_number}</p>
+                                <p class="episode-title">${ep.title}</p>
+                                <p class="episode-synopsis">${ep.synopsis || ''}</p>
+                                ${ep.duration_min ? `<p style="color:var(--clr-text-muted);font-size:0.8rem;margin-top:4px">${utils.formatRuntime(ep.duration_min)}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('') || '<p class="text-muted">No episodes available.</p>';
+                } catch {
+                    document.getElementById('episodes-list').innerHTML = '<p class="text-muted">Failed to load episodes.</p>';
+                }
+            }
+
+            seasonSelect.addEventListener('change', () => loadEpisodes(seasonSelect.value));
+            if (seasons.length > 0) loadEpisodes(seasons[0].season_number);
+        }
+
+        // ─── Reviews ──────────────────────────────────────────────────
+        const reviews = content.reviews || [];
+        document.getElementById('reviews-list').innerHTML = reviews.length > 0
+            ? reviews.map(r => `
+                <div class="review-item">
+                    <div class="review-header">
+                        <img class="review-avatar" src="${r.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed='+r.profile_name}" alt="">
+                        <div>
+                            <div class="review-name">${r.profile_name}</div>
+                            <div class="review-date">${utils.formatDate(r.created_at)}</div>
+                        </div>
+                        ${r.is_spoiler ? '<span class="badge badge-warning">Spoiler</span>' : ''}
+                    </div>
+                    <p class="review-body">${r.body}</p>
+                    <p style="font-size:0.8rem;color:var(--clr-text-dim);margin-top:8px">👍 ${r.helpful_votes} found helpful</p>
+                </div>
+            `).join('')
+            : '<p class="text-muted" style="padding:20px 0">No reviews yet. Be the first!</p>';
+
+        // Write review
+        if (profile) {
+            document.getElementById('write-review').innerHTML = `
+                <h3 style="margin-bottom:var(--space-md)">Write a Review</h3>
+                <textarea id="review-text" class="form-input" style="min-height:100px" placeholder="Share your thoughts about ${content.title}..."></textarea>
+                <div style="display:flex;align-items:center;gap:var(--space-md);margin-top:var(--space-sm)">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.875rem;color:var(--clr-text-muted);cursor:pointer">
+                        <input type="checkbox" id="spoiler-check"> Contains spoilers
+                    </label>
+                    <button class="btn btn-primary btn-sm" onclick="submitReview()">Post Review</button>
+                </div>
+            `;
+        }
+
+        window.submitReview = async function() {
+            const body = document.getElementById('review-text')?.value.trim();
+            const isSpoiler = document.getElementById('spoiler-check')?.checked;
+            if (!body || body.length < 10) { utils.toast('Review must be at least 10 characters', 'error'); return; }
+            try {
+                await api.post('/user/reviews', { profileId: profile.id, contentId: id, body, isSpoiler });
+                utils.toast('Review posted! 📝', 'success');
+                document.getElementById('review-text').value = '';
+            } catch (err) { utils.toast(err.message, 'error'); }
+        };
+
+        // ─── Rating stars ─────────────────────────────────────────────
+        const starEl = document.getElementById('star-rating');
+        let userScore = 0;
+
+        // Show 10 stars (1-10)
+        starEl.innerHTML = Array.from({ length: 10 }, (_, i) => `
+            <span class="star" data-score="${i + 1}" title="${i + 1}/10">★</span>
+        `).join('');
+
+        // Load existing rating
+        if (profile) {
+            try {
+                const { data } = await api.get(`/user/ratings/${id}?profileId=${profile.id}`);
+                if (data?.score) {
+                    userScore = data.score;
+                    highlightStars(userScore);
+                    document.getElementById('your-rating-label').textContent = `Your rating: ${userScore}/10`;
+                }
+            } catch {}
+        }
+
+        function highlightStars(score) {
+            starEl.querySelectorAll('.star').forEach(s => {
+                s.classList.toggle('active', parseInt(s.dataset.score) <= score);
+            });
+        }
+
+        starEl.addEventListener('mouseover', (e) => {
+            if (e.target.classList.contains('star')) {
+                highlightStars(parseInt(e.target.dataset.score));
+            }
+        });
+        starEl.addEventListener('mouseout', () => highlightStars(userScore));
+        starEl.addEventListener('click', async (e) => {
+            if (!e.target.classList.contains('star')) return;
+            if (!profile) { utils.toast('Please select a profile to rate', 'error'); return; }
+            const score = parseInt(e.target.dataset.score);
+            try {
+                await api.post('/user/ratings', { profileId: profile.id, contentId: id, score });
+                userScore = score;
+                highlightStars(score);
+                document.getElementById('your-rating-label').textContent = `Your rating: ${score}/10 ✅`;
+                utils.toast(`Rated ${score}/10 ⭐`, 'success');
+            } catch (err) { utils.toast(err.message, 'error'); }
+        });
+
+        // ─── Similar Content ──────────────────────────────────────────
+        document.getElementById('similar-grid').innerHTML = (content.similar || [])
+            .map(item => buildContentCard(item)).join('')
+            || '<p class="text-muted">No similar content found.</p>';
+
+        // ─── Show content ────────────────────────────────────────────
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('detail-content').style.display = 'block';
+
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — SEEN POINT</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div style="position:fixed;inset:0;background:radial-gradient(ellipse at 70% 40%, rgba(0,212,255,0.10), transparent 60%), var(--clr-bg);z-index:-1"></div>
+
+    <div class="auth-page">
+        <div class="auth-card page-enter">
+            <a href="/index.html" class="auth-logo">SEEN POINT</a>
+
+            <h1 class="auth-title">Create account</h1>
+            <p class="auth-subtitle">Start your streaming journey today</p>
+
+            <div id="error-banner" class="hidden" style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);color:var(--clr-error);font-size:0.875rem;margin-bottom:var(--space-md)"></div>
+            <div id="success-banner" class="hidden" style="background:rgba(70,211,105,0.1);border:1px solid rgba(70,211,105,0.3);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);color:var(--clr-success);font-size:0.875rem;margin-bottom:var(--space-md)"></div>
+
+            <form id="register-form" novalidate>
+                <div class="form-group">
+                    <label class="form-label" for="fullName">Full Name</label>
+                    <input class="form-input" id="fullName" type="text" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="email">Email address</label>
+                    <input class="form-input" id="email" type="email" placeholder="yourname@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input class="form-input" id="password" type="password" placeholder="Min. 6 characters" required>
+                    <p class="form-hint">Must be at least 6 characters</p>
+                    <!-- Password strength indicator -->
+                    <div style="height:4px;background:var(--clr-border);border-radius:2px;margin-top:8px;overflow:hidden">
+                        <div id="pw-strength-bar" style="height:100%;width:0;border-radius:2px;transition:width 0.3s,background 0.3s"></div>
+                    </div>
+                    <p id="pw-strength-label" style="font-size:0.75rem;color:var(--clr-text-muted);margin-top:4px"></p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                    <input class="form-input" id="confirmPassword" type="password" placeholder="Repeat your password" required>
+                    <p class="form-error hidden" id="confirm-error">Passwords do not match</p>
+                </div>
+
+                <!-- Plan selector -->
+                <div class="form-group">
+                    <label class="form-label">Choose a plan (auto-assigned: Basic)</label>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-sm)">
+                        <div class="plan-option active" data-plan="Basic">
+                            <div style="font-weight:700;font-size:0.9rem">Basic</div>
+                            <div style="font-size:0.75rem;color:var(--clr-text-muted)">$6.99 · SD · 1 screen</div>
+                        </div>
+                        <div class="plan-option" data-plan="Standard">
+                            <div style="font-weight:700;font-size:0.9rem">Standard</div>
+                            <div style="font-size:0.75rem;color:var(--clr-text-muted)">$12.99 · HD · 2 screens</div>
+                        </div>
+                        <div class="plan-option" data-plan="Premium">
+                            <div style="font-weight:700;font-size:0.9rem">Premium ⭐</div>
+                            <div style="font-size:0.75rem;color:var(--clr-text-muted)">$19.99 · 4K · 4 screens</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" type="submit" id="submit-btn"
+                        style="width:100%;padding:14px;font-size:1rem">
+                    Create Account
+                </button>
+            </form>
+
+            <p style="text-align:center;margin-top:var(--space-lg);font-size:0.9rem;color:var(--clr-text-muted)">
+                Already have an account? <a href="/pages/login.html" class="auth-link">Sign in</a>
+            </p>
+        </div>
+    </div>
+
+    <style>
+        .plan-option {
+            padding: var(--space-sm);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .plan-option:hover { border-color: var(--clr-text-muted); }
+        .plan-option.active {
+            border-color: var(--clr-primary);
+            background: rgba(0,212,255,0.08);
+        }
+    </style>
+
+    <script src="../js/api.js"></script>
+    <script>
+    if (auth.isLoggedIn()) window.location.href = '/index.html';
+
+    // Password strength
+    document.getElementById('password').addEventListener('input', () => {
+        const pw = document.getElementById('password').value;
+        const bar = document.getElementById('pw-strength-bar');
+        const label = document.getElementById('pw-strength-label');
+        let strength = 0;
+        if (pw.length >= 6) strength++;
+        if (pw.length >= 10) strength++;
+        if (/[A-Z]/.test(pw)) strength++;
+        if (/[0-9]/.test(pw)) strength++;
+        if (/[^A-Za-z0-9]/.test(pw)) strength++;
+
+        const levels = ['', 'Very Weak', 'Weak', 'Fair', 'Strong', 'Very Strong'];
+        const colors = ['', '#ff4444', '#f5a623', '#f5c518', '#46d369', '#46d369'];
+        bar.style.width = (strength * 20) + '%';
+        bar.style.background = colors[strength] || 'transparent';
+        label.textContent = strength > 0 ? levels[strength] : '';
+        label.style.color = colors[strength];
+    });
+
+    // Plan selector
+    document.querySelectorAll('.plan-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            document.querySelectorAll('.plan-option').forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+        });
+    });
+
+    // Confirm password
+    document.getElementById('confirmPassword').addEventListener('input', () => {
+        const pw = document.getElementById('password').value;
+        const cpw = document.getElementById('confirmPassword').value;
+        const err = document.getElementById('confirm-error');
+        if (cpw && pw !== cpw) err.classList.remove('hidden');
+        else err.classList.add('hidden');
+    });
+
+    // Submit
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fullName = document.getElementById('fullName').value.trim();
+        const email    = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirm  = document.getElementById('confirmPassword').value;
+        const btn = document.getElementById('submit-btn');
+        const errorBanner = document.getElementById('error-banner');
+
+        if (!fullName || !email || !password) {
+            errorBanner.textContent = 'Please fill in all fields.';
+            errorBanner.classList.remove('hidden');
+            return;
+        }
+        if (password !== confirm) {
+            errorBanner.textContent = 'Passwords do not match.';
+            errorBanner.classList.remove('hidden');
+            return;
+        }
+        if (password.length < 6) {
+            errorBanner.textContent = 'Password must be at least 6 characters.';
+            errorBanner.classList.remove('hidden');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div> Creating...';
+        errorBanner.classList.add('hidden');
+
+        try {
+            const { token, user } = await api.post('/auth/register', { email, password, fullName });
+            auth.save(token, user);
+            try {
+                const { profiles } = await api.get('/auth/profiles');
+                if (profiles?.length > 0) auth.saveProfile(profiles[0]);
+            } catch {}
+            utils.toast('Account created! Welcome to SEEN POINT 🎬', 'success');
+            setTimeout(() => window.location.href = '/index.html', 1000);
+        } catch (err) {
+            errorBanner.textContent = err.message || 'Registration failed. Please try again.';
+            errorBanner.classList.remove('hidden');
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
+        }
+    });
+    </script>
+</body>
+</html>
