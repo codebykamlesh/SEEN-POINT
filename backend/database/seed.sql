@@ -70,7 +70,7 @@ INSERT INTO people (id, name, bio, birth_date, photo_url) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Content (Movies)
-INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, duration_min, maturity_rating, poster_url, backdrop_url, trailer_url, video_url, language, country, imdb_id, is_published, is_featured, avg_rating, total_views, tags) VALUES
+INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, duration_min, maturity_rating, poster_url, backdrop_url, trailer_url, video_url, language, country, imdb_id, is_published, is_featured, avg_rating, total_views, tags, source_type, full_video_url, is_free) VALUES
 
 ('4d88c5c6-e72b-42ae-b47b-b4c5c58884b3', 'Inception', 'movie',
  'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.',
@@ -81,7 +81,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=YoHD9XEInc0',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt1375666', TRUE, TRUE, 8.8, 125000,
- ARRAY['dream', 'heist', 'psychological', 'mind-bending', 'sci-fi']),
+ ARRAY['dream', 'heist', 'psychological', 'mind-bending', 'sci-fi'],
+ 'youtube', 'YoHD9XEInc0', TRUE),
 
 ('f5380047-7d0b-4089-b9cf-a1bdac574677', 'Interstellar', 'movie',
  'A team of explorers travel through a wormhole in space in an attempt to ensure humanity''s survival.',
@@ -92,7 +93,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=zSWdZVtXT7E',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt0816692', TRUE, TRUE, 8.6, 110000,
- ARRAY['space', 'wormhole', 'relativity', 'survival', 'science']),
+ ARRAY['space', 'wormhole', 'relativity', 'survival', 'science'],
+ 'youtube', 'zSWdZVtXT7E', TRUE),
 
 ('12402963-381b-43bb-b3d6-a2ddc78b3911', 'La La Land', 'movie',
  'A jazz musician and an aspiring actress fall in love while pursuing their dreams in Los Angeles.',
@@ -103,7 +105,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=0pdqf4P9MB8',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt3783958', TRUE, FALSE, 8.0, 85000,
- ARRAY['musical', 'romance', 'dreams', 'jazz', 'los angeles']),
+ ARRAY['musical', 'romance', 'dreams', 'jazz', 'los angeles'],
+ 'youtube', '0pdqf4P9MB8', TRUE),
 
 ('bb142616-28fd-4c99-8b22-354fa174ff3c', 'Dune', 'movie',
  'Feature adaptation of Frank Herbert''s science fiction novel about the son of a noble family entrusted with the protection of the most valuable asset in the galaxy.',
@@ -114,7 +117,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=8g18jFHCLXk',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt1160419', TRUE, TRUE, 8.1, 95000,
- ARRAY['desert', 'spice', 'prophecy', 'epic', 'politics']),
+ ARRAY['desert', 'spice', 'prophecy', 'epic', 'politics'],
+ 'youtube', '8g18jFHCLXk', TRUE),
 
 ('a1e0ef53-cd9a-4c5f-8cad-330416d6cdbe', 'The Dark Knight', 'movie',
  'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.',
@@ -125,7 +129,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=EXeTwQWrcwY',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt0468569', TRUE, FALSE, 9.0, 180000,
- ARRAY['batman', 'joker', 'superhero', 'crime', 'chaos']),
+ ARRAY['batman', 'joker', 'superhero', 'crime', 'chaos'],
+ 'youtube', 'EXeTwQWrcwY', TRUE),
 
 ('239c29a9-3857-4bb7-88e6-95373035ff3b', 'Get Out', 'movie',
  'A young African-American visits his white girlfriend''s parents for the weekend, where his simmering unease about their reception of him eventually reaches a boiling point.',
@@ -136,7 +141,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=sRfnevzM9kQ',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt5052448', TRUE, FALSE, 7.7, 60000,
- ARRAY['social horror', 'race', 'hypnosis', 'psychological']),
+ ARRAY['social horror', 'race', 'hypnosis', 'psychological'],
+ 'youtube', 'sRfnevzM9kQ', TRUE),
 
 ('666bf239-d156-44b1-9e35-f7b40f23eb7b', 'Forrest Gump', 'movie',
  'The presidencies of Kennedy and Johnson, the Vietnam War, the Watergate scandal and other historical events unfold from the perspective of an Alabama man with an IQ of 75.',
@@ -147,7 +153,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=bLvqoHBptjg',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt0109830', TRUE, FALSE, 8.8, 142000,
- ARRAY['life story', 'history', 'running', 'destiny', 'america']),
+ ARRAY['life story', 'history', 'running', 'destiny', 'america'],
+ 'youtube', 'bLvqoHBptjg', TRUE),
 
 ('af50cacc-6d37-46db-ad6c-6acbc5552590', 'Mad Max: Fury Road', 'movie',
  'In a post-apocalyptic wasteland, a woman rebels against a tyrannical ruler in search for her homeland with the aid of a group of female prisoners, a psychotic worshipper, and a drifter named Max.',
@@ -158,7 +165,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=hEJnMQG9ev8',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'Australia', 'tt1392190', TRUE, FALSE, 8.1, 78000,
- ARRAY['post-apocalyptic', 'cars', 'desert', 'rebellion', 'action']),
+ ARRAY['post-apocalyptic', 'cars', 'desert', 'rebellion', 'action'],
+ 'youtube', 'hEJnMQG9ev8', TRUE),
 
 ('5cf1cd21-d83f-4713-bdfe-eae7b946e453', 'Parasite', 'movie',
  'Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.',
@@ -169,7 +177,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=5xH0HfJHsaY',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'ko', 'South Korea', 'tt6751668', TRUE, FALSE, 8.5, 92000,
- ARRAY['class', 'inequality', 'korean', 'dark comedy', 'social']),
+ ARRAY['class', 'inequality', 'korean', 'dark comedy', 'social'],
+ 'youtube', '5xH0HfJHsaY', TRUE),
 
 ('3adcb301-316b-408c-b1ee-072bcd48c574', 'Blade Runner 2049', 'movie',
  'Young Blade Runner K''s discovery of a long-buried secret leads him to track down former Blade Runner Rick Deckard, who''s been missing for thirty years.',
@@ -180,12 +189,13 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://www.youtube.com/watch?v=gCcx85zbxz4',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt1856101', TRUE, FALSE, 8.0, 68000,
- ARRAY['dystopian', 'replicant', 'future', 'detective', 'visual'])
+ ARRAY['dystopian', 'replicant', 'future', 'detective', 'visual'],
+ 'youtube', 'gCcx85zbxz4', TRUE)
 
 ON CONFLICT DO NOTHING;
 
 -- TV Series
-INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, maturity_rating, poster_url, backdrop_url, trailer_url, video_url, language, country, imdb_id, is_published, is_featured, avg_rating, total_views, tags) VALUES
+INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, maturity_rating, poster_url, backdrop_url, trailer_url, video_url, language, country, imdb_id, is_published, is_featured, avg_rating, total_views, tags, source_type, full_video_url, is_free) VALUES
 
 ('594af880-5e2b-4694-b31c-1a21a1e26554', 'Breaking Bad', 'series',
  'A chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine to secure his family''s future.',
@@ -196,7 +206,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, m
  'https://www.youtube.com/watch?v=HhesaQXLuRY',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt0903747', TRUE, TRUE, 9.5, 310000,
- ARRAY['drugs', 'chemistry', 'crime', 'transformation', 'meth']),
+ ARRAY['drugs', 'chemistry', 'crime', 'transformation', 'meth'],
+ 'youtube', 'HhesaQXLuRY', TRUE),
 
 ('ae6fe925-8451-44c0-8db4-d10684453c15', 'Stranger Things', 'series',
  'When a young boy disappears, his mother, a police chief and his friends must confront terrifying supernatural forces.',
@@ -207,7 +218,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, m
  'https://www.youtube.com/watch?v=b9EkMc79ZSU',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'USA', 'tt4574334', TRUE, TRUE, 8.7, 285000,
- ARRAY['supernatural', '80s', 'kids', 'upside down', 'demogorgon']),
+ ARRAY['supernatural', '80s', 'kids', 'upside down', 'demogorgon'],
+ 'youtube', 'b9EkMc79ZSU', TRUE),
 
 ('475fd54c-5438-4a91-99f9-e958ad64a560', 'The Crown', 'series',
  'Follows the political rivalries and romance of Queen Elizabeth II''s reign and the events that shaped the second half of the 20th century.',
@@ -218,7 +230,8 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, m
  'https://www.youtube.com/watch?v=JWtnJjn6ng0',
  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
  'en', 'UK', 'tt4786824', TRUE, FALSE, 8.6, 142000,
- ARRAY['royalty', 'queen', 'politics', 'british history', 'drama'])
+ ARRAY['royalty', 'queen', 'politics', 'british history', 'drama'],
+ 'youtube', 'JWtnJjn6ng0', TRUE)
 
 ON CONFLICT DO NOTHING;
 

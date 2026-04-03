@@ -3,86 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sign in to SEEN POINT and start streaming movies and TV shows.">
+    <meta name="description" content="Sign in to SEEN POINT with email OTP and start streaming movies and TV shows.">
     <title>Sign In — SEEN POINT</title>
     <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        /* OTP Input Boxes */
+        .otp-container { display: flex; gap: 10px; justify-content: center; margin: 24px 0; }
+        .otp-box {
+            width: 52px; height: 60px; text-align: center; font-size: 1.6rem; font-weight: 700;
+            background: rgba(255,255,255,0.05); border: 2px solid var(--clr-border);
+            border-radius: var(--radius-md); color: var(--clr-white); outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: 'Inter', monospace; caret-color: var(--clr-primary);
+        }
+        .otp-box:focus { border-color: var(--clr-primary); box-shadow: 0 0 0 3px rgba(0,212,255,0.15); }
+        .otp-box.filled { border-color: var(--clr-primary); background: rgba(0,212,255,0.06); }
+        .otp-box.error { border-color: var(--clr-error); box-shadow: 0 0 0 3px rgba(255,68,68,0.15); }
+
+        /* Step transitions */
+        .auth-step { display: none; animation: fadeUp 0.4s ease; }
+        .auth-step.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+        /* Resend timer */
+        .resend-timer { font-size: 0.85rem; color: var(--clr-text-muted); text-align: center; margin-top: 16px; }
+        .resend-timer a { color: var(--clr-primary); cursor: pointer; text-decoration: none; font-weight: 600; }
+        .resend-timer a:hover { text-decoration: underline; }
+        .resend-timer a.disabled { color: var(--clr-text-dim); pointer-events: none; }
+
+        /* Divider */
+        .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--clr-text-dim); font-size: 0.8rem; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-top: 1px solid var(--clr-border); }
+
+        /* Email display */
+        .email-display {
+            display: flex; align-items: center; gap: 8px; justify-content: center;
+            background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.15);
+            padding: 10px 16px; border-radius: var(--radius-md); margin-bottom: 8px;
+            font-size: 0.9rem; color: var(--clr-primary); font-weight: 500;
+        }
+        .email-display button {
+            font-size: 0.75rem; color: var(--clr-text-muted); cursor: pointer;
+            background: none; border: none; text-decoration: underline;
+        }
+        .email-display button:hover { color: var(--clr-white); }
+
+        @media (max-width: 480px) {
+            .otp-container { gap: 6px; }
+            .otp-box { width: 44px; height: 52px; font-size: 1.3rem; }
+            .auth-card { margin: 16px; padding: 24px 20px !important; }
+        }
+    </style>
 </head>
 <body>
     <!-- Background cinematic overlay -->
     <div style="position:fixed;inset:0;background:radial-gradient(ellipse at 30% 60%, rgba(0,212,255,0.12), transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(0,100,180,0.08), transparent 40%), var(--clr-bg);z-index:-1"></div>
-    
-    <!-- Floating movie posters background (aesthetic) -->
-    <div id="bg-posters" style="position:fixed;inset:0;z-index:-1;overflow:hidden;opacity:0.06;filter:blur(2px);display:grid;grid-template-columns:repeat(auto-fill,120px);gap:4px;transform:rotate(-5deg) scale(1.1)"></div>
 
     <div class="auth-page">
         <div class="auth-card page-enter">
             <a href="/index.html" class="auth-logo">SEEN POINT</a>
-            
-            <h1 class="auth-title">Welcome back</h1>
-            <p class="auth-subtitle">Sign in to continue watching</p>
 
-            <div id="error-banner" class="hidden" style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);color:var(--clr-error);font-size:0.875rem;margin-bottom:var(--space-md)"></div>
+            <!-- STEP 1: Email -->
+            <div id="step-email" class="auth-step active">
+                <h1 class="auth-title">Welcome</h1>
+                <p class="auth-subtitle">Enter your email to get started</p>
 
-            <form id="login-form" novalidate>
-                <div class="form-group">
-                    <label class="form-label" for="email">Email address</label>
-                    <input 
-                        class="form-input" id="email" type="email" 
-                        placeholder="yourname@example.com" 
-                        autocomplete="email" required>
-                    <p class="form-error hidden" id="email-error"></p>
-                </div>
+                <div id="error-banner" class="hidden" style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);color:var(--clr-error);font-size:0.875rem;margin-bottom:var(--space-md)"></div>
 
-                <div class="form-group">
-                    <label class="form-label" for="password" style="display:flex;justify-content:space-between">
-                        Password
-                        <a href="#" class="auth-link" style="font-weight:400;font-size:0.8rem">Forgot password?</a>
-                    </label>
-                    <div style="position:relative">
-                        <input 
-                            class="form-input" id="password" type="password" 
-                            placeholder="Enter your password" 
-                            autocomplete="current-password" required>
-                        <button type="button" id="toggle-pw" 
-                                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--clr-text-muted);font-size:0.8rem">
-                            Show
-                        </button>
+                <form id="email-form" novalidate>
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email address</label>
+                        <input class="form-input" id="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+                        <p class="form-error hidden" id="email-error"></p>
                     </div>
-                    <p class="form-error hidden" id="pw-error"></p>
-                </div>
+                    <button class="btn btn-primary" type="submit" id="send-otp-btn" style="width:100%;padding:14px;font-size:1rem;margin-top:var(--space-sm)">
+                        Send Login Code
+                    </button>
+                </form>
 
-                <button class="btn btn-primary" type="submit" id="submit-btn" 
-                        style="width:100%;padding:14px;font-size:1rem;margin-top:var(--space-sm)">
-                    Sign In
+                <div class="divider">or</div>
+
+                <!-- Password fallback toggle -->
+                <button id="toggle-pw-mode" type="button" style="width:100%;padding:12px;font-size:0.9rem;background:rgba(255,255,255,0.04);border:1px solid var(--clr-border);border-radius:var(--radius-md);color:var(--clr-text-muted);cursor:pointer;transition:all 0.2s">
+                    Sign in with password
                 </button>
-            </form>
 
-            <!-- Demo accounts -->
-            <div style="margin-top:var(--space-lg);padding:var(--space-md);background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);border-radius:var(--radius-md)">
-                <p style="font-size:0.8rem;color:var(--clr-text-muted);margin-bottom:var(--space-sm);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Demo Accounts</p>
-                <div style="display:grid;gap:var(--space-xs)">
-                    <button class="demo-fill-btn" data-email="admin@seenpoint.com" data-pw="Admin@123"
-                            style="display:flex;align-items:center;gap:var(--space-sm);padding:8px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:var(--radius-sm);cursor:pointer;transition:background 0.2s;text-align:left">
-                        <span style="font-size:1.2rem">⚙️</span>
-                        <div>
-                            <div style="font-size:0.8rem;font-weight:600;color:var(--clr-white)">Admin</div>
-                            <div style="font-size:0.7rem;color:var(--clr-text-muted)">admin@seenpoint.com · Admin@123</div>
+                <!-- Hidden password form -->
+                <div id="pw-form-wrapper" class="hidden" style="margin-top:16px;animation:fadeUp 0.3s ease">
+                    <form id="pw-login-form" novalidate>
+                        <div class="form-group">
+                            <label class="form-label" for="pw-email">Email</label>
+                            <input class="form-input" id="pw-email" type="email" placeholder="you@example.com" autocomplete="email" required>
                         </div>
-                    </button>
-                    <button class="demo-fill-btn" data-email="alice@example.com" data-pw="password"
-                            style="display:flex;align-items:center;gap:var(--space-sm);padding:8px;background:rgba(255,255,255,0.04);border:1px solid var(--clr-border);border-radius:var(--radius-sm);cursor:pointer;transition:background 0.2s;text-align:left">
-                        <span style="font-size:1.2rem">👤</span>
-                        <div>
-                            <div style="font-size:0.8rem;font-weight:600;color:var(--clr-white)">Alice (Premium)</div>
-                            <div style="font-size:0.7rem;color:var(--clr-text-muted)">alice@example.com · password</div>
+                        <div class="form-group">
+                            <label class="form-label" for="pw-password">Password</label>
+                            <input class="form-input" id="pw-password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
                         </div>
-                    </button>
+                        <button class="btn btn-primary" type="submit" id="pw-submit-btn" style="width:100%;padding:14px;font-size:1rem;margin-top:var(--space-sm)">
+                            Sign In
+                        </button>
+                    </form>
                 </div>
+
+                <p style="text-align:center;margin-top:var(--space-lg);font-size:0.9rem;color:var(--clr-text-muted)">
+                    New to SEEN POINT? <a href="/pages/register.html" class="auth-link">Create an account</a>
+                </p>
             </div>
 
-            <p style="text-align:center;margin-top:var(--space-lg);font-size:0.9rem;color:var(--clr-text-muted)">
-                New to SEEN POINT? <a href="/pages/register.html" class="auth-link">Create an account</a>
-            </p>
+            <!-- STEP 2: OTP Verification -->
+            <div id="step-otp" class="auth-step">
+                <h1 class="auth-title">Check your email</h1>
+                <p class="auth-subtitle">We sent a 6-digit code to</p>
+                <div class="email-display">
+                    <span id="otp-email-display"></span>
+                    <button id="change-email-btn">Change</button>
+                </div>
+
+                <div id="otp-error" class="hidden" style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);color:var(--clr-error);font-size:0.875rem;margin-bottom:var(--space-md)"></div>
+
+                <div class="otp-container" id="otp-inputs">
+                    <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                    <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                </div>
+
+                <button class="btn btn-primary" type="button" id="verify-otp-btn" style="width:100%;padding:14px;font-size:1rem" disabled>
+                    Verify & Sign In
+                </button>
+
+                <div class="resend-timer">
+                    Didn't receive the code? <a id="resend-btn" class="disabled">Resend in <span id="cooldown-sec">60</span>s</a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -91,78 +146,213 @@
     // Redirect if already logged in
     if (auth.isLoggedIn()) window.location.href = '/index.html';
 
-    // Password toggle
-    document.getElementById('toggle-pw').addEventListener('click', () => {
-        const pw = document.getElementById('password');
-        const btn = document.getElementById('toggle-pw');
-        if (pw.type === 'password') { pw.type = 'text'; btn.textContent = 'Hide'; }
-        else { pw.type = 'password'; btn.textContent = 'Show'; }
-    });
+    let userEmail = '';
+    let cooldownInterval = null;
 
-    // Demo fill buttons
-    document.querySelectorAll('.demo-fill-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.getElementById('email').value = btn.dataset.email;
-            document.getElementById('password').value = btn.dataset.pw;
-        });
-        btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(255,255,255,0.08)');
-        btn.addEventListener('mouseleave', () => btn.style.background = btn.dataset.email.includes('admin') ? 'rgba(0,212,255,0.08)' : 'rgba(255,255,255,0.04)');
-    });
-
-    // Form submit
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
+    // ─── STEP 1: Send OTP ─────────────────────────────────────────
+    document.getElementById('email-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-
-        const email    = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-        const submitBtn = document.getElementById('submit-btn');
-        const errorBanner = document.getElementById('error-banner');
-
-        // Basic validation
-        let valid = true;
+        const email = document.getElementById('email').value.trim();
         if (!email) {
             document.getElementById('email-error').textContent = 'Email is required';
             document.getElementById('email-error').classList.remove('hidden');
-            valid = false;
+            return;
         }
-        if (!password) {
-            document.getElementById('pw-error').textContent = 'Password is required';
-            document.getElementById('pw-error').classList.remove('hidden');
-            valid = false;
-        }
-        if (!valid) return;
 
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div> Signing in...';
-        errorBanner.classList.add('hidden');
+        const btn = document.getElementById('send-otp-btn');
+        const errBanner = document.getElementById('error-banner');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div> Sending code...';
+        errBanner.classList.add('hidden');
+
+        try {
+            await api.post('/auth/send-otp', { email });
+            userEmail = email;
+            document.getElementById('otp-email-display').textContent = email;
+            showStep('step-otp');
+            startCooldown(60);
+            document.querySelectorAll('.otp-box')[0].focus();
+        } catch (err) {
+            errBanner.textContent = err.message || 'Failed to send OTP. Try again.';
+            errBanner.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Send Login Code';
+        }
+    });
+
+    // ─── STEP 2: OTP Input Logic ──────────────────────────────────
+    const otpBoxes = document.querySelectorAll('.otp-box');
+
+    otpBoxes.forEach((box, i) => {
+        box.addEventListener('input', (e) => {
+            const val = e.target.value.replace(/\D/g, '');
+            e.target.value = val;
+            if (val) {
+                box.classList.add('filled');
+                if (i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
+            } else {
+                box.classList.remove('filled');
+            }
+            checkOtpComplete();
+        });
+
+        box.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !box.value && i > 0) {
+                otpBoxes[i - 1].focus();
+                otpBoxes[i - 1].value = '';
+                otpBoxes[i - 1].classList.remove('filled');
+            }
+            if (e.key === 'Enter') document.getElementById('verify-otp-btn').click();
+        });
+
+        // Handle paste
+        box.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pasted = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+            pasted.split('').forEach((ch, idx) => {
+                if (otpBoxes[idx]) { otpBoxes[idx].value = ch; otpBoxes[idx].classList.add('filled'); }
+            });
+            if (pasted.length > 0) otpBoxes[Math.min(pasted.length, 5)].focus();
+            checkOtpComplete();
+        });
+    });
+
+    function getOtpValue() {
+        return Array.from(otpBoxes).map(b => b.value).join('');
+    }
+
+    function checkOtpComplete() {
+        const otp = getOtpValue();
+        document.getElementById('verify-otp-btn').disabled = otp.length < 6;
+    }
+
+    // ─── Verify OTP ──────────────────────────────────────────────
+    document.getElementById('verify-otp-btn').addEventListener('click', async () => {
+        const otp = getOtpValue();
+        if (otp.length < 6) return;
+
+        const btn = document.getElementById('verify-otp-btn');
+        const errDiv = document.getElementById('otp-error');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div> Verifying...';
+        errDiv.classList.add('hidden');
+        otpBoxes.forEach(b => b.classList.remove('error'));
+
+        try {
+            const { token, user } = await api.post('/auth/verify-otp', { email: userEmail, otp });
+            auth.save(token, user);
+
+            try {
+                const { profiles } = await api.get('/auth/profiles');
+                if (profiles && profiles.length > 0) auth.saveProfile(profiles[0]);
+            } catch { /* optional */ }
+
+            utils.toast('Welcome, ' + user.fullName.split(' ')[0] + '! 🎬', 'success');
+            setTimeout(() => window.location.href = '/index.html', 800);
+        } catch (err) {
+            errDiv.textContent = err.message || 'Invalid or expired code. Try again.';
+            errDiv.classList.remove('hidden');
+            otpBoxes.forEach(b => b.classList.add('error'));
+            btn.disabled = false;
+            btn.textContent = 'Verify & Sign In';
+        }
+    });
+
+    // ─── Password Fallback ───────────────────────────────────────
+    document.getElementById('toggle-pw-mode').addEventListener('click', () => {
+        const wrap = document.getElementById('pw-form-wrapper');
+        const btn = document.getElementById('toggle-pw-mode');
+        if (wrap.classList.contains('hidden')) {
+            wrap.classList.remove('hidden');
+            btn.textContent = 'Use OTP instead';
+            document.getElementById('pw-email').value = document.getElementById('email').value;
+        } else {
+            wrap.classList.add('hidden');
+            btn.textContent = 'Sign in with password';
+        }
+    });
+
+    document.getElementById('pw-login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('pw-email').value.trim();
+        const password = document.getElementById('pw-password').value;
+        const btn = document.getElementById('pw-submit-btn');
+        const errBanner = document.getElementById('error-banner');
+
+        if (!email || !password) return;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div> Signing in...';
+        errBanner.classList.add('hidden');
 
         try {
             const { token, user } = await api.post('/auth/login', { email, password });
             auth.save(token, user);
-
-            // Load first profile
             try {
                 const { profiles } = await api.get('/auth/profiles');
-                if (profiles && profiles.length > 0) {
-                    auth.saveProfile(profiles[0]);
-                }
-            } catch { /* profile optional */ }
-
+                if (profiles && profiles.length > 0) auth.saveProfile(profiles[0]);
+            } catch {}
             utils.toast('Welcome back, ' + user.fullName.split(' ')[0] + '! 🎬', 'success');
             setTimeout(() => window.location.href = '/index.html', 800);
         } catch (err) {
-            errorBanner.textContent = err.message || 'Login failed. Please check your credentials.';
-            errorBanner.classList.remove('hidden');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Sign In';
+            errBanner.textContent = err.message || 'Invalid credentials.';
+            errBanner.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
         }
     });
 
-    // Clear errors on input
-    ['email', 'password'].forEach(id => {
-        document.getElementById(id).addEventListener('input', () => {
-            document.getElementById(id + '-error')?.classList.add('hidden');
-        });
+    // ─── Helpers ──────────────────────────────────────────────────
+    function showStep(id) {
+        document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    document.getElementById('change-email-btn').addEventListener('click', () => {
+        showStep('step-email');
+        otpBoxes.forEach(b => { b.value = ''; b.classList.remove('filled', 'error'); });
+        if (cooldownInterval) clearInterval(cooldownInterval);
+    });
+
+    // ─── Resend Cooldown ─────────────────────────────────────────
+    function startCooldown(seconds) {
+        const resendBtn = document.getElementById('resend-btn');
+        const secSpan = document.getElementById('cooldown-sec');
+        let remaining = seconds;
+        resendBtn.classList.add('disabled');
+        resendBtn.innerHTML = `Resend in <span id="cooldown-sec">${remaining}</span>s`;
+
+        if (cooldownInterval) clearInterval(cooldownInterval);
+        cooldownInterval = setInterval(() => {
+            remaining--;
+            const span = document.getElementById('cooldown-sec');
+            if (span) span.textContent = remaining;
+            if (remaining <= 0) {
+                clearInterval(cooldownInterval);
+                resendBtn.classList.remove('disabled');
+                resendBtn.textContent = 'Resend Code';
+            }
+        }, 1000);
+    }
+
+    document.getElementById('resend-btn').addEventListener('click', async () => {
+        const resendBtn = document.getElementById('resend-btn');
+        if (resendBtn.classList.contains('disabled')) return;
+        try {
+            await api.post('/auth/send-otp', { email: userEmail });
+            startCooldown(60);
+            utils.toast('New code sent! 📧', 'success');
+            otpBoxes.forEach(b => { b.value = ''; b.classList.remove('filled', 'error'); });
+            otpBoxes[0].focus();
+        } catch (err) {
+            utils.toast(err.message || 'Could not resend. Try later.', 'error');
+        }
+    });
+
+    // Clear email error on input
+    document.getElementById('email').addEventListener('input', () => {
+        document.getElementById('email-error')?.classList.add('hidden');
     });
     </script>
 </body>

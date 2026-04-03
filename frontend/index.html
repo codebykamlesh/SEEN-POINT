@@ -84,7 +84,11 @@
     <!-- ─── NAVBAR ────────────────────────────────────────────────── -->
     <nav class="navbar navbar-gradient" id="navbar">
         <a href="/index.html" class="navbar-logo">SEEN POINT</a>
-        <ul class="navbar-nav">
+        <button class="hamburger-btn" id="hamburger-btn" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="mobile-overlay" id="mobile-overlay"></div>
+        <ul class="navbar-nav" id="navbar-nav">
             <li><a href="/index.html"            class="nav-link active">Home</a></li>
             <li><a href="/pages/browse.html"      class="nav-link">Browse</a></li>
             <li><a href="/pages/browse.html?type=movie"  class="nav-link">Movies</a></li>
@@ -92,10 +96,6 @@
             <li><a href="/pages/watchlist.html"   class="nav-link">My List</a></li>
         </ul>
         <div class="navbar-actions">
-            <div class="live-indicator">
-                <div class="live-dot"></div>
-                <span id="viewer-count">—</span> watching
-            </div>
             <button class="navbar-search-btn" onclick="window.location='/pages/search.html'" aria-label="Search">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>

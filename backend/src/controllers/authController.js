@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { query } = require('../config/database');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
+const { sendOTP, generateOTP } = require('../services/email');
 
 /**
  * Generate a signed JWT token
@@ -170,4 +171,117 @@ const getProfiles = asyncHandler(async (req, res) => {
     res.json({ success: true, profiles: rows });
 });
 
-module.exports = { register, login, getProfile, getProfiles };
+
+// ─── OTP AUTH ─────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/auth/send-otp
+ * Generate and email a 6-digit OTP
+ */
+const sendOtp = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    if (!email) throw createError('Email is required', 400);
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Cooldown: prevent spam — 60s between OTPs for same email
+    const recent = await query(
+        `SELECT created_at FROM otp_codes WHERE email = $1 AND created_at > NOW() - INTERVAL '60 seconds' LIMIT 1`,
+        [cleanEmail]
+    );
+    if (recent.rows.length > 0) {
+        const waitSec = Math.ceil(60 - (Date.now() - new Date(recent.rows[0].created_at).getTime()) / 1000);
+        throw createError(`Please wait ${waitSec}s before requesting another OTP`, 429);
+    }
+
+    // Invalidate previous unused OTPs
+    await query(`UPDATE otp_codes SET is_used = TRUE WHERE email = $1 AND is_used = FALSE`, [cleanEmail]);
+
+    // Generate + store
+    const otp = generateOTP();
+    await query(
+        `INSERT INTO otp_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')`,
+        [cleanEmail, otp]
+    );
+
+    // Send email
+    await sendOTP(cleanEmail, otp);
+
+    res.json({ success: true, message: 'OTP sent to your email' });
+});
+
+/**
+ * POST /api/auth/verify-otp
+ * Verify the OTP, auto-create user if first login, return JWT
+ */
+const verifyOtp = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+    if (!email || !otp) throw createError('Email and OTP are required', 400);
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Find the valid, unused OTP
+    const { rows: otpRows } = await query(
+        `SELECT id FROM otp_codes
+         WHERE email = $1 AND code = $2 AND is_used = FALSE AND expires_at > NOW()
+         ORDER BY created_at DESC LIMIT 1`,
+        [cleanEmail, otp]
+    );
+
+    if (otpRows.length === 0) {
+        throw createError('Invalid or expired OTP', 401);
+    }
+
+    // Mark OTP as used
+    await query(`UPDATE otp_codes SET is_used = TRUE WHERE id = $1`, [otpRows[0].id]);
+
+    // Find or create user
+    let { rows: userRows } = await query(
+        `SELECT u.*, sp.name AS plan_name FROM users u
+         LEFT JOIN subscription_plans sp ON sp.id = u.subscription_plan_id
+         WHERE u.email = $1`, [cleanEmail]
+    );
+
+    let user;
+    if (userRows.length === 0) {
+        // Auto-create user on first OTP login
+        const planResult = await query(`SELECT id FROM subscription_plans WHERE name = 'Basic' LIMIT 1`);
+        const planId = planResult.rows[0]?.id || null;
+        const newName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+        const { rows: created } = await query(
+            `INSERT INTO users (id, email, full_name, subscription_plan_id, subscription_start, subscription_end, email_verified)
+             VALUES ($1, $2, $3, $4, NOW(), NOW() + INTERVAL '1 month', TRUE)
+             RETURNING id, email, full_name, is_admin, subscription_plan_id, created_at`,
+            [uuidv4(), cleanEmail, newName, planId]
+        );
+        user = created[0];
+        user.plan_name = 'Basic';
+
+        // Create default profile
+        await query(
+            `INSERT INTO profiles (id, user_id, name, avatar_url) VALUES ($1, $2, $3, $4)`,
+            [uuidv4(), user.id, newName.split(' ')[0], `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`]
+        );
+    } else {
+        user = userRows[0];
+        await query('UPDATE users SET last_login = NOW(), email_verified = TRUE WHERE id = $1', [user.id]);
+    }
+
+    const token = signToken(user);
+
+    res.json({
+        success: true,
+        message: 'Login successful',
+        token,
+        user: {
+            id: user.id,
+            email: user.email,
+            fullName: user.full_name,
+            isAdmin: user.is_admin,
+            planName: user.plan_name,
+        }
+    });
+});
+
+module.exports = { register, login, getProfile, getProfiles, sendOtp, verifyOtp };

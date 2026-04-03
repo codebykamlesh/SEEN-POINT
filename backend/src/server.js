@@ -22,6 +22,7 @@ const http      = require('http');
 const WebSocket = require('ws');
 const path      = require('path');
 const cron      = require('node-cron');
+const compression = require('compression');
 
 const { pool, checkDatabaseHealth, getPoolStats } = require('./config/database');
 const { errorHandler, notFound }                  = require('./middleware/errorHandler');
@@ -68,6 +69,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
 }));
+
+// Gzip compression
+app.use(compression());
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));

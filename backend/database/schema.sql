@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 CREATE TABLE IF NOT EXISTS users (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email               VARCHAR(255) NOT NULL UNIQUE,
-    password_hash       VARCHAR(255) NOT NULL,           -- bcrypt hash
+    password_hash       VARCHAR(255),                    -- NULL for OTP-only users
     full_name           VARCHAR(255) NOT NULL,
     subscription_plan_id UUID REFERENCES subscription_plans(id) ON DELETE SET NULL,
     subscription_start  TIMESTAMPTZ,
@@ -57,6 +57,16 @@ CREATE TABLE IF NOT EXISTS profiles (
     language     VARCHAR(10) NOT NULL DEFAULT 'en',
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(user_id, name)                               -- Unique profile names per user
+);
+
+-- OTP codes for email-based authentication
+CREATE TABLE IF NOT EXISTS otp_codes (
+    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email        VARCHAR(255) NOT NULL,
+    code         VARCHAR(6) NOT NULL,
+    expires_at   TIMESTAMPTZ NOT NULL,
+    is_used      BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- =============================================================
@@ -99,7 +109,11 @@ CREATE TABLE IF NOT EXISTS content (
     search_vector   TSVECTOR,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    onedrive_file_id VARCHAR(500)                       -- ID of the file in OneDrive
+    onedrive_file_id VARCHAR(500),                      -- ID of the file in OneDrive
+    -- Multi-source streaming
+    source_type     VARCHAR(20) DEFAULT 'onedrive' CHECK (source_type IN ('onedrive', 'youtube', 'public_domain')),
+    full_video_url  VARCHAR(1000),                      -- Direct URL or YouTube video ID
+    is_free         BOOLEAN NOT NULL DEFAULT TRUE        -- Free to watch without subscription
 );
 
 -- OneDrive Integration Tables

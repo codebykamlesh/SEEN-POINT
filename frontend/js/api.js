@@ -308,7 +308,7 @@ async function toggleWatchlist(event, contentId) {
         if (isActive) {
             await api.delete(`/user/watchlist/${contentId}?profileId=${profile.id}`);
             btn.classList.remove('watchlist-active');
-            utils.toast('Removed from watchlist');
+        utils.toast('Removed from watchlist');
         } else {
             await api.post('/user/watchlist', { profileId: profile.id, contentId });
             btn.classList.add('watchlist-active');
@@ -318,3 +318,36 @@ async function toggleWatchlist(event, contentId) {
         utils.toast(err.message || 'Failed', 'error');
     }
 }
+
+// ─── HAMBURGER MENU ──────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+    const hamburger = document.getElementById('hamburger-btn');
+    const navMenu   = document.getElementById('navbar-nav');
+    const overlay   = document.getElementById('mobile-overlay');
+
+    if (hamburger && navMenu) {
+        const toggle = () => {
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('open');
+            if (overlay) overlay.classList.toggle('active');
+            document.body.style.overflow = navMenu.classList.contains('open') ? 'hidden' : '';
+        };
+
+        hamburger.addEventListener('click', toggle);
+        if (overlay) overlay.addEventListener('click', toggle);
+
+        // Close on nav link click (mobile)
+        navMenu.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (navMenu.classList.contains('open')) toggle();
+            });
+        });
+    }
+
+    // Lazy image loading
+    document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+        if (img.complete) img.classList.add('loaded');
+        else img.addEventListener('load', () => img.classList.add('loaded'));
+    });
+});

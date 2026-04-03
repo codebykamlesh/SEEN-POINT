@@ -1269,20 +1269,107 @@ input, textarea, select { font-family: inherit; }
   .section-header { padding: 0 var(--space-md); }
   .content-row { padding: var(--space-sm) var(--space-md); }
   .content-card { width: 140px; }
-  .content-grid { padding: 0 var(--space-md); }
-  .filter-bar { padding: var(--space-md); }
+  .content-grid { padding: 0 var(--space-md); grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .filter-bar { padding: var(--space-md); flex-wrap: wrap; }
   .admin-layout { flex-direction: column; }
   .admin-sidebar { width: 100%; position: relative; height: auto; }
   .admin-main { margin-left: 0; padding: var(--space-md); }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   #toast-container { left: var(--space-md); right: var(--space-md); bottom: var(--space-md); }
   .toast { max-width: 100%; }
+
+  /* Hamburger menu */
+  .hamburger-btn { display: flex !important; }
+  .navbar-nav {
+    position: fixed; top: 0; right: -280px; width: 280px; height: 100vh;
+    background: var(--clr-bg-2); flex-direction: column; padding: 80px 24px 24px;
+    gap: var(--space-md); z-index: 999; transition: right 0.35s ease;
+    border-left: 1px solid var(--clr-border); box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  }
+  .navbar-nav.open { right: 0; }
+  .nav-link { font-size: 1.1rem; padding: 10px 0; }
+  .nav-link::after { bottom: 0; }
+  .navbar-actions { gap: var(--space-sm); }
+  .navbar-logo { font-size: 1.7rem; margin-right: auto; }
+
+  /* Hero */
+  .hero { min-height: 60vh; }
+  .hero-content { padding: 0 var(--space-md); }
+  .hero-title { font-size: 2.2rem; }
+  .hero-meta { flex-wrap: wrap; gap: var(--space-xs); }
+
+  /* Detail page */
+  .detail-hero-info { flex-direction: column; text-align: center; }
+  .detail-poster { width: 180px; margin: 0 auto; }
+  .detail-actions { flex-wrap: wrap; justify-content: center; }
+
+  /* Search */
+  .search-input { font-size: 1rem; }
+
+  /* Player full-width */
+  .player-container { border-radius: 0; }
 }
 
 @media (max-width: 480px) {
-  .hero-title { font-size: 2rem; }
+  .hero-title { font-size: 1.8rem; }
   .hero-actions { flex-direction: column; }
   .hero-actions .btn { width: 100%; }
   .stats-grid { grid-template-columns: 1fr; }
   .content-card { width: 120px; }
+  .content-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+
+  .auth-card { margin: 12px; padding: 24px 16px !important; }
+  .auth-title { font-size: 1.4rem; }
+  .navbar { padding: 0 var(--space-sm); }
+  .navbar-logo { font-size: 1.4rem; letter-spacing: 1px; }
+  .hero-description { display: none; }
+  .hero-tag { font-size: 0.7rem; }
+
+  /* Touch-friendly controls */
+  .btn { min-height: 44px; min-width: 44px; }
+  .form-input, .form-select, .form-textarea { font-size: 16px; /* prevents iOS zoom */ }
 }
+
+/* ─── Hamburger Button ─────────────────────────────────────────── */
+.hamburger-btn {
+  display: none; /* shown via media query */
+  flex-direction: column; justify-content: center; gap: 5px;
+  width: 36px; height: 36px; cursor: pointer;
+  background: none; border: none; padding: 4px; z-index: 1000;
+}
+.hamburger-btn span {
+  display: block; height: 2px; width: 100%;
+  background: var(--clr-text); border-radius: 2px;
+  transition: all 0.3s ease;
+}
+.hamburger-btn.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.hamburger-btn.active span:nth-child(2) { opacity: 0; }
+.hamburger-btn.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+/* Mobile menu overlay */
+.mobile-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 998; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.mobile-overlay.active { opacity: 1; pointer-events: auto; }
+
+/* ─── Lazy Load ────────────────────────────────────────────────── */
+img[loading="lazy"] {
+  opacity: 0; transition: opacity 0.4s ease;
+}
+img[loading="lazy"].loaded, img[loading="lazy"][complete] {
+  opacity: 1;
+}
+
+/* ─── Player Login Overlay ─────────────────────────────────────── */
+.player-login-overlay {
+  position: absolute; inset: 0; z-index: 50;
+  background: rgba(0,0,0,0.85);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 24px; text-align: center;
+  backdrop-filter: blur(8px);
+}
+.player-login-overlay h2 { font-size: 1.5rem; color: var(--clr-white); }
+.player-login-overlay p { color: var(--clr-text-muted); max-width: 400px; }
+.player-login-overlay .btn { min-width: 200px; }
