@@ -17,17 +17,17 @@ INSERT INTO users (id, email, password_hash, full_name, subscription_plan_id, su
      'admin@seenpoint.com',
      '$2a$12$ou4.F1yvsQstB8xmQZc56.qoEMJi4DVYT/8v7xO8wC0W6k9njNX06',
      'Admin User',
-     'b358fc38-058d-4a32-802f-ef507607691a',
-     NOW() - INTERVAL '1 year',
-     NOW() + INTERVAL '1 year',
+     NULL,
+     NULL,
+     NULL,
      TRUE, TRUE)
 ON CONFLICT DO NOTHING;
 
 -- Sample Users (password: User@1234 for all)
 INSERT INTO users (id, email, password_hash, full_name, subscription_plan_id, subscription_start, subscription_end, email_verified) VALUES
-    ('b9efeb90-427f-4d33-b584-1b92a48e1504', 'alice@example.com',  '$2a$12$9gfRyiCdv7zlpFXLMhdN5.LkDc.g9vUijw7W11ncIDsAOrxs7lFtm', 'Alice Johnson', 'b358fc38-058d-4a32-802f-ef507607691a', NOW() - INTERVAL '3 months', NOW() + INTERVAL '9 months', TRUE),
-    ('3a97a235-9662-4b0c-89ef-9a49668a3c3a', 'bob@example.com',     '$2a$12$9gfRyiCdv7zlpFXLMhdN5.LkDc.g9vUijw7W11ncIDsAOrxs7lFtm', 'Bob Smith',    '875d6662-123b-4ba6-a641-25dd2d1d7357', NOW() - INTERVAL '1 month',  NOW() + INTERVAL '11 months', TRUE),
-    ('772bde68-d074-4ac5-81e2-a9ff4ff4d9da', 'carol@example.com',  '$2a$12$9gfRyiCdv7zlpFXLMhdN5.LkDc.g9vUijw7W11ncIDsAOrxs7lFtm', 'Carol White',  '4e38a0f5-46c7-4380-9109-6766eab31971', NOW() - INTERVAL '2 weeks', NOW() + INTERVAL '2 weeks', TRUE)
+    ('b9efeb90-427f-4d33-b584-1b92a48e1504', 'alice@example.com',  '$2a$12$9gfRyiCdv7zlpFXLMhdN5.LkDc.g9vUijw7W11ncIDsAOrxs7lFtm', 'Alice Johnson', NULL, NULL, NULL, TRUE),
+    ('3a97a235-9662-4b0c-89ef-9a49668a3c3a', 'bob@example.com',     '$2a$12$9gfRyiCdv7zlpFXLMhdN5.LkDc.g9vUijw7W11ncIDsAOrxs7lFtm', 'Bob Smith',    NULL, NULL, NULL, TRUE),
+    ('772bde68-d074-4ac5-81e2-a9ff4ff4d9da', 'carol@example.com',  '$2a$12$9gfRyiCdv7zlpFXLMhdN5.LkDc.g9vUijw7W11ncIDsAOrxs7lFtm', 'Carol White',  NULL, NULL, NULL, TRUE)
 ON CONFLICT DO NOTHING;
 
 -- Profiles
@@ -79,10 +79,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg',
  'https://image.tmdb.org/t/p/original/s3TBrRGB1iav7gFOCNx3H31MoES.jpg',
  'https://www.youtube.com/watch?v=YoHD9XEInc0',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt1375666', TRUE, TRUE, 8.8, 125000,
  ARRAY['dream', 'heist', 'psychological', 'mind-bending', 'sci-fi'],
- 'youtube', 'YoHD9XEInc0', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('f5380047-7d0b-4089-b9cf-a1bdac574677', 'Interstellar', 'movie',
  'A team of explorers travel through a wormhole in space in an attempt to ensure humanity''s survival.',
@@ -91,10 +91,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
  'https://image.tmdb.org/t/p/original/pbrkL804c8yAv3zBZR4QPEafpAR.jpg',
  'https://www.youtube.com/watch?v=zSWdZVtXT7E',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt0816692', TRUE, TRUE, 8.6, 110000,
  ARRAY['space', 'wormhole', 'relativity', 'survival', 'science'],
- 'youtube', 'zSWdZVtXT7E', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('12402963-381b-43bb-b3d6-a2ddc78b3911', 'La La Land', 'movie',
  'A jazz musician and an aspiring actress fall in love while pursuing their dreams in Los Angeles.',
@@ -103,10 +103,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg',
  'https://image.tmdb.org/t/p/original/nadTlnTE6DdFCdSMxNBGJqHhLl8.jpg',
  'https://www.youtube.com/watch?v=0pdqf4P9MB8',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt3783958', TRUE, FALSE, 8.0, 85000,
  ARRAY['musical', 'romance', 'dreams', 'jazz', 'los angeles'],
- 'youtube', '0pdqf4P9MB8', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('bb142616-28fd-4c99-8b22-354fa174ff3c', 'Dune', 'movie',
  'Feature adaptation of Frank Herbert''s science fiction novel about the son of a noble family entrusted with the protection of the most valuable asset in the galaxy.',
@@ -115,10 +115,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg',
  'https://image.tmdb.org/t/p/original/eeIStTMhkBmkltpEbcGAiDFmpuD.jpg',
  'https://www.youtube.com/watch?v=8g18jFHCLXk',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt1160419', TRUE, TRUE, 8.1, 95000,
  ARRAY['desert', 'spice', 'prophecy', 'epic', 'politics'],
- 'youtube', '8g18jFHCLXk', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('a1e0ef53-cd9a-4c5f-8cad-330416d6cdbe', 'The Dark Knight', 'movie',
  'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.',
@@ -127,10 +127,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
  'https://image.tmdb.org/t/p/original/hqkIcbrOHL86UncnHIsHVcVmzue.jpg',
  'https://www.youtube.com/watch?v=EXeTwQWrcwY',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt0468569', TRUE, FALSE, 9.0, 180000,
  ARRAY['batman', 'joker', 'superhero', 'crime', 'chaos'],
- 'youtube', 'EXeTwQWrcwY', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('239c29a9-3857-4bb7-88e6-95373035ff3b', 'Get Out', 'movie',
  'A young African-American visits his white girlfriend''s parents for the weekend, where his simmering unease about their reception of him eventually reaches a boiling point.',
@@ -139,10 +139,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/qLP7mFRSBfcLfLzQEJMbTIpVtNb.jpg',
  'https://image.tmdb.org/t/p/original/v8AKE1K1HmzFEaGE4ZECREb2g5k.jpg',
  'https://www.youtube.com/watch?v=sRfnevzM9kQ',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt5052448', TRUE, FALSE, 7.7, 60000,
  ARRAY['social horror', 'race', 'hypnosis', 'psychological'],
- 'youtube', 'sRfnevzM9kQ', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('666bf239-d156-44b1-9e35-f7b40f23eb7b', 'Forrest Gump', 'movie',
  'The presidencies of Kennedy and Johnson, the Vietnam War, the Watergate scandal and other historical events unfold from the perspective of an Alabama man with an IQ of 75.',
@@ -151,10 +151,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg',
  'https://image.tmdb.org/t/p/original/ic0intvXZSfBlYPIvWXpU1ivUCO.jpg',
  'https://www.youtube.com/watch?v=bLvqoHBptjg',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt0109830', TRUE, FALSE, 8.8, 142000,
  ARRAY['life story', 'history', 'running', 'destiny', 'america'],
- 'youtube', 'bLvqoHBptjg', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('af50cacc-6d37-46db-ad6c-6acbc5552590', 'Mad Max: Fury Road', 'movie',
  'In a post-apocalyptic wasteland, a woman rebels against a tyrannical ruler in search for her homeland with the aid of a group of female prisoners, a psychotic worshipper, and a drifter named Max.',
@@ -163,10 +163,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/kqjL17yufvn9OVLyXYpvtyrFfak.jpg',
  'https://image.tmdb.org/t/p/original/tbhdm8UJASTBJGqFMwlGAdwu2Kc.jpg',
  'https://www.youtube.com/watch?v=hEJnMQG9ev8',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'Australia', 'tt1392190', TRUE, FALSE, 8.1, 78000,
  ARRAY['post-apocalyptic', 'cars', 'desert', 'rebellion', 'action'],
- 'youtube', 'hEJnMQG9ev8', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('5cf1cd21-d83f-4713-bdfe-eae7b946e453', 'Parasite', 'movie',
  'Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.',
@@ -175,10 +175,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
  'https://image.tmdb.org/t/p/original/TU9NIjwzjoKPwQHoHshkFcQUCG.jpg',
  'https://www.youtube.com/watch?v=5xH0HfJHsaY',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'ko', 'South Korea', 'tt6751668', TRUE, FALSE, 8.5, 92000,
  ARRAY['class', 'inequality', 'korean', 'dark comedy', 'social'],
- 'youtube', '5xH0HfJHsaY', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('3adcb301-316b-408c-b1ee-072bcd48c574', 'Blade Runner 2049', 'movie',
  'Young Blade Runner K''s discovery of a long-buried secret leads him to track down former Blade Runner Rick Deckard, who''s been missing for thirty years.',
@@ -187,12 +187,14 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, d
  'https://image.tmdb.org/t/p/w500/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg',
  'https://image.tmdb.org/t/p/original/ilRyazdMJwN05exqhwK4tMKBYZs.jpg',
  'https://www.youtube.com/watch?v=gCcx85zbxz4',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt1856101', TRUE, FALSE, 8.0, 68000,
  ARRAY['dystopian', 'replicant', 'future', 'detective', 'visual'],
- 'youtube', 'gCcx85zbxz4', TRUE)
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE)
 
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE
+SET full_video_url = EXCLUDED.full_video_url,
+    trailer_url = EXCLUDED.trailer_url;
 
 -- TV Series
 INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, maturity_rating, poster_url, backdrop_url, trailer_url, video_url, language, country, imdb_id, is_published, is_featured, avg_rating, total_views, tags, source_type, full_video_url, is_free) VALUES
@@ -204,10 +206,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, m
  'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg',
  'https://image.tmdb.org/t/p/original/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg',
  'https://www.youtube.com/watch?v=HhesaQXLuRY',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt0903747', TRUE, TRUE, 9.5, 310000,
  ARRAY['drugs', 'chemistry', 'crime', 'transformation', 'meth'],
- 'youtube', 'HhesaQXLuRY', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('ae6fe925-8451-44c0-8db4-d10684453c15', 'Stranger Things', 'series',
  'When a young boy disappears, his mother, a police chief and his friends must confront terrifying supernatural forces.',
@@ -216,10 +218,10 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, m
  'https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGSST.jpg',
  'https://image.tmdb.org/t/p/original/rcA17r3BYHNygpWmkQKz1pVxCUn.jpg',
  'https://www.youtube.com/watch?v=b9EkMc79ZSU',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'USA', 'tt4574334', TRUE, TRUE, 8.7, 285000,
  ARRAY['supernatural', '80s', 'kids', 'upside down', 'demogorgon'],
- 'youtube', 'b9EkMc79ZSU', TRUE),
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE),
 
 ('475fd54c-5438-4a91-99f9-e958ad64a560', 'The Crown', 'series',
  'Follows the political rivalries and romance of Queen Elizabeth II''s reign and the events that shaped the second half of the 20th century.',
@@ -228,12 +230,14 @@ INSERT INTO content (id, title, content_type, synopsis, tagline, release_year, m
  'https://image.tmdb.org/t/p/w500/1M876KPjulVwppEpldhdc8V4o68.jpg',
  'https://image.tmdb.org/t/p/original/g0FjSEmSmHNqisMsdBa7BXI3zsN.jpg',
  'https://www.youtube.com/watch?v=JWtnJjn6ng0',
- 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+ 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
  'en', 'UK', 'tt4786824', TRUE, FALSE, 8.6, 142000,
  ARRAY['royalty', 'queen', 'politics', 'british history', 'drama'],
- 'youtube', 'JWtnJjn6ng0', TRUE)
+ 'public_domain', 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', TRUE)
 
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO UPDATE
+SET full_video_url = EXCLUDED.full_video_url,
+    trailer_url = EXCLUDED.trailer_url;
 
 -- Content Genres (assign genres to content)
 INSERT INTO content_genres (content_id, genre_id) VALUES

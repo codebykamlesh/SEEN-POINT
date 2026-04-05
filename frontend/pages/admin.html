@@ -195,6 +195,7 @@
                                 <th>Poster</th>
                                 <th>Title</th>
                                 <th>Type</th>
+                                <th>Source</th>
                                 <th>Year</th>
                                 <th>Status</th>
                                 <th>Views</th>
@@ -217,7 +218,7 @@
                             <tr>
                                 <th>User</th>
                                 <th>Email</th>
-                                <th>Plan</th>
+                                <th>Access</th>
                                 <th>Status</th>
                                 <th>Last Login</th>
                                 <th>Joined</th>
@@ -376,11 +377,29 @@
                             <textarea class="form-input" name="synopsis" style="min-height:80px" placeholder="Brief description..."></textarea>
                         </div>
                         <div class="form-group" style="grid-column:1/-1">
+                            <label class="form-label">Trailer URL</label>
+                            <input class="form-input" name="trailerUrl" placeholder="https://www.youtube.com/watch?v=...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Full Movie Source *</label>
+                            <select class="form-input" name="sourceType">
+                                <option value="onedrive">OneDrive Stream</option>
+                                <option value="public_domain">Direct MP4 URL</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Full Video URL</label>
+                            <input class="form-input" name="fullVideoUrl" placeholder="https://cdn.example.com/movie.mp4">
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1">
                             <label class="form-label">OneDrive File ID <span style="color:var(--clr-text-dim);font-weight:400">(link a video file)</span></label>
                             <div style="display:flex;gap:8px">
                                 <input class="form-input" name="onedriveFileId" placeholder="OneDrive file ID (from File Browser)" style="flex:1">
                                 <button type="button" class="btn btn-ghost btn-sm" onclick="document.querySelector('[data-panel=onedrive]').click()" title="Open OneDrive Browser">☁️ Browse</button>
                             </div>
+                            <p style="font-size:0.78rem;color:var(--clr-text-muted);margin-top:8px">
+                                Guests watch the trailer only. Logged-in users play the full source with the HTML5 player.
+                            </p>
                         </div>
                     </div>
                     <div style="display:flex;gap:var(--space-sm);align-items:center;margin-top:var(--space-md)">
@@ -433,7 +452,7 @@
                 // KPI cards
                 document.getElementById('kpi-cards').innerHTML = [
                     ['Total Users',       utils.formatNumber(stats.total_users),   `+${stats.new_users_30d} this month`, 'up'],
-                    ['Paying Users',      utils.formatNumber(stats.paying_users),  `${Math.round(stats.paying_users/stats.total_users*100)}% conv.`, 'up'],
+                    ['Active Members',    utils.formatNumber(stats.active_members),  `${Math.round(stats.active_members/Math.max(stats.total_users, 1)*100)}% of users`, 'up'],
                     ['Total Content',     utils.formatNumber(stats.total_content), `${stats.total_movies} movies · ${stats.total_series} series`],
                     ['Views (24h)',        utils.formatNumber(stats.views_24h),     `${utils.formatNumber(stats.views_7d)} this week`, 'up'],
                 ].map(([label, value, change, dir]) => `
@@ -508,6 +527,7 @@
                         <td><img class="table-poster" src="${c.poster_url||''}" onerror="this.style.display='none'" alt=""></td>
                         <td style="font-weight:500">${c.title}</td>
                         <td>${c.content_type}</td>
+                        <td><span class="badge badge-info">${c.source_type || (c.onedrive_file_id ? 'onedrive' : 'public_domain')}</span></td>
                         <td>${c.release_year || '—'}</td>
                         <td>
                             <span class="badge ${c.is_published ? 'badge-success' : 'badge-warning'}">
@@ -566,7 +586,7 @@
                     <tr>
                         <td style="font-weight:500">${u.full_name} ${u.is_admin ? '<span class="badge badge-warning">Admin</span>' : ''}</td>
                         <td style="color:var(--clr-text-muted)">${u.email}</td>
-                        <td>${u.plan || '<span class="text-muted">None</span>'}</td>
+                        <td>${u.access_label || 'Free Access'}</td>
                         <td><span class="badge ${u.is_active ? 'badge-success' : 'badge-error'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
                         <td style="color:var(--clr-text-muted)">${u.last_login ? utils.formatDate(u.last_login) : '—'}</td>
                         <td style="color:var(--clr-text-muted)">${utils.formatDate(u.created_at)}</td>
@@ -601,13 +621,13 @@
                     <div class="chart-wrap" style="margin-top:var(--space-md)">
                         <p class="chart-title">Recent Users</p>
                         <table class="admin-table">
-                            <thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Joined</th></tr></thead>
+                            <thead><tr><th>Name</th><th>Email</th><th>Access</th><th>Joined</th></tr></thead>
                             <tbody>
                                 ${data.recentUsers.map(u => `
                                     <tr>
                                         <td>${u.full_name}</td>
                                         <td style="color:var(--clr-text-muted)">${u.email}</td>
-                                        <td>${u.plan || '—'}</td>
+                                        <td>${u.access_label || 'Free Access'}</td>
                                         <td style="color:var(--clr-text-muted)">${utils.formatDate(u.created_at)}</td>
                                     </tr>
                                 `).join('')}
@@ -634,11 +654,19 @@
             body.isFeatured  = fd.get('isFeatured') === 'on';
             body.releaseYear = body.releaseYear ? parseInt(body.releaseYear) : undefined;
             body.durationMin = body.durationMin ? parseInt(body.durationMin) : undefined;
+            body.sourceType = body.sourceType || 'onedrive';
+
+            if (body.sourceType === 'onedrive') {
+                body.fullVideoUrl = undefined;
+            } else {
+                body.onedriveFileId = undefined;
+            }
 
             try {
                 await api.post('/admin/content', body);
                 utils.toast('Content added! 🎬', 'success');
                 closeModal('add-content-modal');
+                e.target.reset();
                 contentPage = 1;
                 loadContentPanel();
             } catch (err) { utils.toast('Error: ' + err.message, 'error'); }

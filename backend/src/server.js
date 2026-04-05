@@ -133,7 +133,11 @@ app.get('/api/health', async (req, res) => {
 
 // ─── Static Frontend (optional single-server deployment) ──────────────────────
 
-if (process.env.SERVE_FRONTEND === 'true') {
+const shouldServeFrontend =
+    process.env.SERVE_FRONTEND === 'true' ||
+    (process.env.NODE_ENV !== 'production' && process.env.SERVE_FRONTEND !== 'false');
+
+if (shouldServeFrontend) {
     const frontendPath = path.join(__dirname, '../../frontend');
     app.use(express.static(frontendPath));
     app.get('*', (req, res) => {

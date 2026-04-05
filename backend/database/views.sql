@@ -113,8 +113,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS mv_platform_stats AS
         (SELECT COUNT(*) FROM users 
          WHERE created_at > NOW() - INTERVAL '30 days') AS new_users_30d,
         (SELECT COUNT(*) FROM users 
-         WHERE subscription_plan_id IS NOT NULL 
-           AND is_active = TRUE) AS paying_users,
+         WHERE is_active = TRUE) AS active_members,
         -- Content metrics
         (SELECT COUNT(*) FROM content WHERE is_published = TRUE) AS total_content,
         (SELECT COUNT(*) FROM content 

@@ -53,14 +53,37 @@ router.get('/files', [authenticate, requireAdmin], asyncHandler(async (req, res)
 
 /**
  * GET /api/onedrive/stream/:fileId
- * Redirects to the actual OneDrive download URL suitable for HTML5 video player
+ * Proxies the OneDrive stream through the backend so HTML5 video playback
+ * receives stable auth, range support, and explicit media headers.
  */
-router.get('/stream/:fileId', asyncHandler(async (req, res) => {
+router.get('/stream/:fileId', authenticate, asyncHandler(async (req, res) => {
     const { fileId } = req.params;
     try {
-        const streamUrl = await onedriveService.getStreamUrl(fileId);
-        // We 302 redirect directly to the stream URL so the browser plays it natively
-        res.redirect(302, streamUrl);
+        const stream = await onedriveService.getStreamMetadata(fileId);
+        const rangeHeader = req.headers.range;
+        const upstreamResponse = await fetch(stream.downloadUrl, {
+            headers: rangeHeader ? { Range: rangeHeader } : {},
+        });
+
+        if (!upstreamResponse.ok || !upstreamResponse.body) {
+            throw new Error(`Upstream stream request failed with status ${upstreamResponse.status}`);
+        }
+
+        res.status(upstreamResponse.status);
+        res.setHeader('Content-Type', stream.mimeType || upstreamResponse.headers.get('content-type') || 'video/mp4');
+        res.setHeader('Accept-Ranges', upstreamResponse.headers.get('accept-ranges') || 'bytes');
+        res.setHeader('Cache-Control', 'private, max-age=300');
+
+        const contentLength = upstreamResponse.headers.get('content-length');
+        const contentRange = upstreamResponse.headers.get('content-range');
+        if (contentLength) res.setHeader('Content-Length', contentLength);
+        if (contentRange) res.setHeader('Content-Range', contentRange);
+        if (stream.name) {
+            res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(stream.name)}"`);
+        }
+
+        const nodeStream = require('stream');
+        nodeStream.Readable.fromWeb(upstreamResponse.body).pipe(res);
     } catch (err) {
         throw createError(err.message, 404);
     }

@@ -9,6 +9,38 @@ const { query } = require('../config/database');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
 const { v4: uuidv4 } = require('uuid');
 
+function normalizeContentSourceInput(payload) {
+    const sourceType = (payload.sourceType || (payload.onedriveFileId ? 'onedrive' : 'public_domain') || 'public_domain')
+        .toString()
+        .trim()
+        .toLowerCase();
+
+    if (!['onedrive', 'public_domain', 'youtube'].includes(sourceType)) {
+        throw createError('sourceType must be one of onedrive, public_domain, or youtube', 400);
+    }
+
+    const trailerUrl = payload.trailerUrl ? String(payload.trailerUrl).trim() : null;
+    const onedriveFileId = payload.onedriveFileId ? String(payload.onedriveFileId).trim() : null;
+    const fullVideoUrl = payload.fullVideoUrl
+        ? String(payload.fullVideoUrl).trim()
+        : (payload.videoUrl ? String(payload.videoUrl).trim() : null);
+
+    if (sourceType === 'onedrive' && !onedriveFileId) {
+        throw createError('onedriveFileId is required when sourceType is onedrive', 400);
+    }
+
+    if (sourceType !== 'onedrive' && !fullVideoUrl) {
+        throw createError('fullVideoUrl is required for non-OneDrive content', 400);
+    }
+
+    return {
+        sourceType,
+        trailerUrl,
+        onedriveFileId,
+        fullVideoUrl,
+    };
+}
+
 // ─── ANALYTICS DASHBOARD ─────────────────────────────────────────────────────
 
 /**
@@ -17,7 +49,7 @@ const { v4: uuidv4 } = require('uuid');
  */
 const getAnalytics = asyncHandler(async (req, res) => {
     const EMPTY_STATS = {
-        total_users: 0, new_users_30d: 0, paying_users: 0,
+        total_users: 0, new_users_30d: 0, active_members: 0,
         total_content: 0, total_movies: 0, total_series: 0,
         views_24h: 0, views_7d: 0, total_ratings: 0,
         last_refreshed: new Date().toISOString(),
@@ -42,9 +74,8 @@ const getAnalytics = asyncHandler(async (req, res) => {
             // Recent user registrations
             query(`
                 SELECT u.id, u.email, u.full_name, u.created_at, u.is_active,
-                       sp.name AS plan
+                       'Free Access' AS access_label
                 FROM users u
-                LEFT JOIN subscription_plans sp ON sp.id = u.subscription_plan_id
                 ORDER BY u.created_at DESC LIMIT 10
             `).catch(() => ({ rows: [] })),
 
@@ -57,10 +88,14 @@ const getAnalytics = asyncHandler(async (req, res) => {
             `).catch(() => ({ rows: [] })),
         ]);
 
+        const statsRow = stats.rows[0] || EMPTY_STATS;
+        // mv_platform_stats already exposes `active_members`; keep fallback neutral.
+        if (statsRow.active_members === undefined) statsRow.active_members = 0;
+
         res.json({
             success: true,
             data: {
-                stats: stats.rows[0] || EMPTY_STATS,
+                stats: statsRow,
                 topContent: topContent.rows,
                 genreStats: genreStats.rows,
                 recentUsers: recentUsers.rows,
@@ -102,7 +137,7 @@ const adminGetContent = asyncHandler(async (req, res) => {
     const { rows } = await query(
         `SELECT c.id, c.title, c.content_type, c.release_year, c.is_published,
                 c.is_featured, c.avg_rating, c.total_views, c.total_ratings,
-                c.poster_url, c.backdrop_url,
+                c.poster_url, c.backdrop_url, c.source_type, c.onedrive_file_id, c.full_video_url,
                 c.created_at, c.updated_at
          FROM content c ${where}
          ORDER BY c.created_at DESC
@@ -133,7 +168,7 @@ const createContent = asyncHandler(async (req, res) => {
     const {
         title, contentType, synopsis, tagline, releaseYear,
         durationMin, maturityRating, posterUrl, backdropUrl,
-        trailerUrl, videoUrl, language, country, imdbId,
+        trailerUrl, videoUrl, fullVideoUrl, sourceType, language, country, imdbId,
         isPublished = false, isFeatured = false, tags = [], genreIds = [], onedriveFileId = null
     } = req.body;
 
@@ -141,17 +176,27 @@ const createContent = asyncHandler(async (req, res) => {
         throw createError('title and contentType are required', 400);
     }
 
+    const normalized = normalizeContentSourceInput({
+        trailerUrl,
+        videoUrl,
+        fullVideoUrl,
+        sourceType,
+        onedriveFileId,
+    });
+
     const id = uuidv4();
 
     await query(
         `INSERT INTO content 
             (id, title, content_type, synopsis, tagline, release_year, duration_min,
              maturity_rating, poster_url, backdrop_url, trailer_url, video_url,
-             language, country, imdb_id, is_published, is_featured, tags, onedrive_file_id)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+             language, country, imdb_id, is_published, is_featured, tags, onedrive_file_id,
+             source_type, full_video_url)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
         [id, title, contentType, synopsis, tagline, releaseYear, durationMin,
-         maturityRating || 'PG-13', posterUrl, backdropUrl, trailerUrl, videoUrl,
-         language || 'en', country, imdbId, isPublished, isFeatured, tags, onedriveFileId]
+         maturityRating || 'PG-13', posterUrl, backdropUrl, normalized.trailerUrl, normalized.fullVideoUrl,
+         language || 'en', country, imdbId, isPublished, isFeatured, tags, normalized.onedriveFileId,
+         normalized.sourceType, normalized.fullVideoUrl]
     );
 
     // Assign genres
@@ -171,10 +216,27 @@ const updateContent = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const fields = req.body;
 
+    const shouldNormalizeSource = (
+        fields.sourceType !== undefined
+        || fields.onedriveFileId !== undefined
+        || fields.fullVideoUrl !== undefined
+        || fields.videoUrl !== undefined
+        || fields.trailerUrl !== undefined
+    );
+    const normalizedSource = shouldNormalizeSource
+        ? normalizeContentSourceInput({
+            trailerUrl: fields.trailerUrl,
+            videoUrl: fields.videoUrl,
+            fullVideoUrl: fields.fullVideoUrl,
+            sourceType: fields.sourceType,
+            onedriveFileId: fields.onedriveFileId,
+        })
+        : null;
+
     // Build dynamic update query
     const allowed = ['title','synopsis','tagline','release_year','duration_min',
-        'maturity_rating','poster_url','backdrop_url','trailer_url','video_url',
-        'language','country','is_published','is_featured','tags', 'onedrive_file_id'];
+        'maturity_rating','poster_url','backdrop_url',
+        'language','country','is_published','is_featured','tags'];
 
     const updates = [];
     const params = [];
@@ -185,6 +247,21 @@ const updateContent = asyncHandler(async (req, res) => {
         if (fields[camelKey] !== undefined) {
             updates.push(`${field} = $${i++}`);
             params.push(fields[camelKey]);
+        }
+    }
+
+    if (normalizedSource) {
+        const sourceFieldValues = {
+            trailer_url: normalizedSource.trailerUrl,
+            video_url: normalizedSource.fullVideoUrl,
+            onedrive_file_id: normalizedSource.onedriveFileId,
+            source_type: normalizedSource.sourceType,
+            full_video_url: normalizedSource.fullVideoUrl,
+        };
+
+        for (const [field, value] of Object.entries(sourceFieldValues)) {
+            updates.push(`${field} = $${i++}`);
+            params.push(value);
         }
     }
 
@@ -220,10 +297,8 @@ const getUsers = asyncHandler(async (req, res) => {
     const { rows } = await query(
         `SELECT u.id, u.email, u.full_name, u.is_active, u.is_admin,
                 u.created_at, u.last_login,
-                sp.name AS plan,
-                u.subscription_end
+                'Free Access' AS access_label
          FROM users u
-         LEFT JOIN subscription_plans sp ON sp.id = u.subscription_plan_id
          ORDER BY u.created_at DESC
          LIMIT $1 OFFSET $2`,
         [limit, offset]

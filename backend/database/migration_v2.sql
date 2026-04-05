@@ -6,7 +6,7 @@
 CREATE TABLE IF NOT EXISTS otp_codes (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email       VARCHAR(255) NOT NULL,
-    otp         VARCHAR(6) NOT NULL,
+    code        VARCHAR(6) NOT NULL,
     expires_at  TIMESTAMPTZ NOT NULL,
     is_used     BOOLEAN NOT NULL DEFAULT FALSE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -37,7 +37,7 @@ BEGIN
             CHECK (source_type IN ('youtube', 'onedrive', 'public_domain'));
     END IF;
 
-    -- full_video_url: full movie URL (for public_domain or embed URLs)
+    -- full_video_url: full movie URL for OneDrive-backed metadata or direct MP4 streams
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_name = 'content' AND column_name = 'full_video_url'

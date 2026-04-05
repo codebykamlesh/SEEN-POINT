@@ -122,6 +122,30 @@ const getStreamUrl = async (fileId) => {
     }
 };
 
+const getStreamMetadata = async (fileId) => {
+    const client = await getGraphClient();
+    try {
+        const file = await client
+            .api(`/me/drive/items/${fileId}`)
+            .select('id,name,size,file,@microsoft.graph.downloadUrl')
+            .get();
+
+        const downloadUrl = file['@microsoft.graph.downloadUrl'];
+        if (!downloadUrl) throw new Error('Download URL not found in Graph API response');
+
+        return {
+            id: file.id,
+            name: file.name,
+            size: file.size || null,
+            mimeType: file.file?.mimeType || 'video/mp4',
+            downloadUrl,
+        };
+    } catch (err) {
+        console.error('OneDrive getStreamMetadata API error:', err);
+        throw new Error('Failed to retrieve stream metadata from OneDrive');
+    }
+};
+
 /**
  * Get details of a file
  */
@@ -171,6 +195,7 @@ module.exports = {
     getAuthUrl,
     handleCallback,
     getStreamUrl,
+    getStreamMetadata,
     getFile,
     listFiles,
     getConnectionStatus,

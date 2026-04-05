@@ -46,19 +46,13 @@ const register = asyncHandler(async (req, res) => {
     // Hash password (cost factor 12 = good security/performance balance)
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Assign the Basic plan by default
-    const planResult = await query(
-        `SELECT id FROM subscription_plans WHERE name = 'Basic' LIMIT 1`
-    );
-    const planId = planResult.rows[0]?.id || null;
-
-    // Insert user
+    // Insert user (free platform — no paid tiers required)
     const { rows } = await query(
         `INSERT INTO users 
-            (id, email, password_hash, full_name, subscription_plan_id, subscription_start, subscription_end, email_verified)
-         VALUES ($1, $2, $3, $4, $5, NOW(), NOW() + INTERVAL '1 month', TRUE)
-         RETURNING id, email, full_name, is_admin, subscription_plan_id, created_at`,
-        [uuidv4(), email.toLowerCase(), passwordHash, fullName, planId]
+            (id, email, password_hash, full_name, email_verified)
+         VALUES ($1, $2, $3, $4, TRUE)
+         RETURNING id, email, full_name, is_admin, created_at`,
+        [uuidv4(), email.toLowerCase(), passwordHash, fullName]
     );
     const user = rows[0];
 
@@ -94,12 +88,10 @@ const login = asyncHandler(async (req, res) => {
         throw createError('Email and password are required', 400);
     }
 
-    // Find user with subscription info
+    // Find user
     const { rows } = await query(
-        `SELECT u.*, sp.name AS plan_name 
-         FROM users u
-         LEFT JOIN subscription_plans sp ON sp.id = u.subscription_plan_id
-         WHERE u.email = $1 AND u.is_active = TRUE`,
+        `SELECT * FROM users
+         WHERE email = $1 AND is_active = TRUE`,
         [email.toLowerCase()]
     );
 
@@ -129,7 +121,6 @@ const login = asyncHandler(async (req, res) => {
             email: user.email,
             fullName: user.full_name,
             isAdmin: user.is_admin,
-            planName: user.plan_name,
         }
     });
 });
@@ -141,13 +132,10 @@ const login = asyncHandler(async (req, res) => {
 const getProfile = asyncHandler(async (req, res) => {
     const { rows } = await query(
         `SELECT u.id, u.email, u.full_name, u.is_admin, u.created_at,
-                u.subscription_start, u.subscription_end,
-                sp.name AS plan_name, sp.max_screens, sp.max_quality,
                 (SELECT json_agg(row_to_json(p)) FROM (
                     SELECT id, name, avatar_url, is_kids FROM profiles WHERE user_id = u.id
                 ) p) AS profiles
          FROM users u
-         LEFT JOIN subscription_plans sp ON sp.id = u.subscription_plan_id
          WHERE u.id = $1`,
         [req.user.id]
     );
@@ -237,26 +225,21 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
     // Find or create user
     let { rows: userRows } = await query(
-        `SELECT u.*, sp.name AS plan_name FROM users u
-         LEFT JOIN subscription_plans sp ON sp.id = u.subscription_plan_id
-         WHERE u.email = $1`, [cleanEmail]
+        `SELECT * FROM users WHERE email = $1`, [cleanEmail]
     );
 
     let user;
     if (userRows.length === 0) {
-        // Auto-create user on first OTP login
-        const planResult = await query(`SELECT id FROM subscription_plans WHERE name = 'Basic' LIMIT 1`);
-        const planId = planResult.rows[0]?.id || null;
+        // Auto-create user on first OTP login (free platform)
         const newName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
         const { rows: created } = await query(
-            `INSERT INTO users (id, email, full_name, subscription_plan_id, subscription_start, subscription_end, email_verified)
-             VALUES ($1, $2, $3, $4, NOW(), NOW() + INTERVAL '1 month', TRUE)
-             RETURNING id, email, full_name, is_admin, subscription_plan_id, created_at`,
-            [uuidv4(), cleanEmail, newName, planId]
+            `INSERT INTO users (id, email, full_name, email_verified)
+             VALUES ($1, $2, $3, TRUE)
+             RETURNING id, email, full_name, is_admin, created_at`,
+            [uuidv4(), cleanEmail, newName]
         );
         user = created[0];
-        user.plan_name = 'Basic';
 
         // Create default profile
         await query(
@@ -279,7 +262,6 @@ const verifyOtp = asyncHandler(async (req, res) => {
             email: user.email,
             fullName: user.full_name,
             isAdmin: user.is_admin,
-            planName: user.plan_name,
         }
     });
 });

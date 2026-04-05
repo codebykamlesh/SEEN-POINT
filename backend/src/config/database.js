@@ -88,7 +88,7 @@ const getClient = () => pool.connect();
  */
 async function checkDatabaseHealth() {
     const REQUIRED_TABLES = [
-        'subscription_plans', 'users', 'profiles', 'genres', 'content',
+        'users', 'profiles', 'genres', 'content',
         'content_genres', 'people', 'content_cast', 'seasons', 'episodes',
         'watch_history', 'ratings', 'watchlist', 'notifications',
     ];

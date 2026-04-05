@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register — SEEN POINT</title>
+    <title>Register | SEEN POINT</title>
     <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
@@ -14,10 +14,9 @@
             <a href="/index.html" class="auth-logo">SEEN POINT</a>
 
             <h1 class="auth-title">Create account</h1>
-            <p class="auth-subtitle">Start your streaming journey today</p>
+            <p class="auth-subtitle">Create your free account and start streaming after login</p>
 
             <div id="error-banner" class="hidden" style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);color:var(--clr-error);font-size:0.875rem;margin-bottom:var(--space-md)"></div>
-            <div id="success-banner" class="hidden" style="background:rgba(70,211,105,0.1);border:1px solid rgba(70,211,105,0.3);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);color:var(--clr-success);font-size:0.875rem;margin-bottom:var(--space-md)"></div>
 
             <form id="register-form" novalidate>
                 <div class="form-group">
@@ -32,7 +31,6 @@
                     <label class="form-label" for="password">Password</label>
                     <input class="form-input" id="password" type="password" placeholder="Min. 6 characters" required>
                     <p class="form-hint">Must be at least 6 characters</p>
-                    <!-- Password strength indicator -->
                     <div style="height:4px;background:var(--clr-border);border-radius:2px;margin-top:8px;overflow:hidden">
                         <div id="pw-strength-bar" style="height:100%;width:0;border-radius:2px;transition:width 0.3s,background 0.3s"></div>
                     </div>
@@ -43,28 +41,13 @@
                     <input class="form-input" id="confirmPassword" type="password" placeholder="Repeat your password" required>
                     <p class="form-error hidden" id="confirm-error">Passwords do not match</p>
                 </div>
-
-                <!-- Plan selector -->
                 <div class="form-group">
-                    <label class="form-label">Choose a plan (auto-assigned: Basic)</label>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-sm)">
-                        <div class="plan-option active" data-plan="Basic">
-                            <div style="font-weight:700;font-size:0.9rem">Basic</div>
-                            <div style="font-size:0.75rem;color:var(--clr-text-muted)">$6.99 · SD · 1 screen</div>
-                        </div>
-                        <div class="plan-option" data-plan="Standard">
-                            <div style="font-weight:700;font-size:0.9rem">Standard</div>
-                            <div style="font-size:0.75rem;color:var(--clr-text-muted)">$12.99 · HD · 2 screens</div>
-                        </div>
-                        <div class="plan-option" data-plan="Premium">
-                            <div style="font-weight:700;font-size:0.9rem">Premium ⭐</div>
-                            <div style="font-size:0.75rem;color:var(--clr-text-muted)">$19.99 · 4K · 4 screens</div>
-                        </div>
+                    <div style="padding:14px 16px;border:1px solid var(--clr-border);border-radius:var(--radius-md);background:rgba(0,212,255,0.08);color:var(--clr-text)">
+                        Full catalog unlocked after login. Free streaming for everyone.
                     </div>
                 </div>
 
-                <button class="btn btn-primary" type="submit" id="submit-btn"
-                        style="width:100%;padding:14px;font-size:1rem">
+                <button class="btn btn-primary" type="submit" id="submit-btn" style="width:100%;padding:14px;font-size:1rem">
                     Create Account
                 </button>
             </form>
@@ -75,27 +58,10 @@
         </div>
     </div>
 
-    <style>
-        .plan-option {
-            padding: var(--space-sm);
-            border: 1px solid var(--clr-border);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .plan-option:hover { border-color: var(--clr-text-muted); }
-        .plan-option.active {
-            border-color: var(--clr-primary);
-            background: rgba(0,212,255,0.08);
-        }
-    </style>
-
     <script src="../js/api.js"></script>
     <script>
     if (auth.isLoggedIn()) window.location.href = '/index.html';
 
-    // Password strength
     document.getElementById('password').addEventListener('input', () => {
         const pw = document.getElementById('password').value;
         const bar = document.getElementById('pw-strength-bar');
@@ -115,15 +81,6 @@
         label.style.color = colors[strength];
     });
 
-    // Plan selector
-    document.querySelectorAll('.plan-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            document.querySelectorAll('.plan-option').forEach(o => o.classList.remove('active'));
-            opt.classList.add('active');
-        });
-    });
-
-    // Confirm password
     document.getElementById('confirmPassword').addEventListener('input', () => {
         const pw = document.getElementById('password').value;
         const cpw = document.getElementById('confirmPassword').value;
@@ -132,13 +89,12 @@
         else err.classList.add('hidden');
     });
 
-    // Submit
     document.getElementById('register-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const fullName = document.getElementById('fullName').value.trim();
-        const email    = document.getElementById('email').value.trim();
+        const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
-        const confirm  = document.getElementById('confirmPassword').value;
+        const confirm = document.getElementById('confirmPassword').value;
         const btn = document.getElementById('submit-btn');
         const errorBanner = document.getElementById('error-banner');
 
@@ -169,7 +125,7 @@
                 const { profiles } = await api.get('/auth/profiles');
                 if (profiles?.length > 0) auth.saveProfile(profiles[0]);
             } catch {}
-            utils.toast('Account created! Welcome to SEEN POINT 🎬', 'success');
+            utils.toast('Account created! Welcome to SEEN POINT', 'success');
             setTimeout(() => window.location.href = '/index.html', 1000);
         } catch (err) {
             errorBanner.textContent = err.message || 'Registration failed. Please try again.';

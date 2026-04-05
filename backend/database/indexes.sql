@@ -14,9 +14,8 @@
 -- Users: Fast lookup by email (login queries)
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
--- Users: Find active subscribers
-CREATE INDEX IF NOT EXISTS idx_users_subscription ON users(subscription_plan_id) 
-    WHERE is_active = TRUE;
+-- Users: Recent session / admin sorting
+CREATE INDEX IF NOT EXISTS idx_users_last_login ON users(last_login DESC);
 
 -- Profiles: All profiles for a user (common join)
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
@@ -87,7 +86,7 @@ CREATE INDEX IF NOT EXISTS idx_content_featured
 
 -- Only index active users
 CREATE INDEX IF NOT EXISTS idx_users_active 
-    ON users(email, subscription_plan_id) 
+    ON users(email)
     WHERE is_active = TRUE;
 
 -- Only index unread notifications (most queries check unread)

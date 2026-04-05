@@ -176,16 +176,13 @@ CREATE OR REPLACE TRIGGER trg_notify_new_content
     EXECUTE FUNCTION fn_notify_new_content();
 
 -- =============================================================
--- TRIGGER 6: Auto-update user subscription status
+-- TRIGGER 6: Keep legacy access metadata inert for future monetization
 -- =============================================================
 
-CREATE OR REPLACE FUNCTION fn_check_subscription_status()
+CREATE OR REPLACE FUNCTION fn_touch_user_access_metadata()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- If subscription has expired, mark user accordingly
-    IF NEW.subscription_end IS NOT NULL AND NEW.subscription_end < NOW() THEN
-        NEW.subscription_plan_id := NULL;
-    END IF;
+    -- Legacy subscription columns are intentionally unused in the free-access model.
     NEW.updated_at := NOW();
     RETURN NEW;
 END;
@@ -195,4 +192,4 @@ CREATE OR REPLACE TRIGGER trg_check_subscription
     BEFORE UPDATE
     ON users
     FOR EACH ROW
-    EXECUTE FUNCTION fn_check_subscription_status();
+    EXECUTE FUNCTION fn_touch_user_access_metadata();

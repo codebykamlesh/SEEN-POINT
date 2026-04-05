@@ -148,7 +148,7 @@
                 <input type="file" id="avatar-input" accept="image/*" style="display:none">
                 <div class="profile-name-display" id="display-name">Loading...</div>
                 <div class="profile-email-display" id="display-email"></div>
-                <div class="profile-badge" id="plan-badge">🎬 Free</div>
+                <div class="profile-badge" id="access-badge">Free Access</div>
 
                 <nav class="side-nav">
                     <div class="side-nav-item active" onclick="showPanel('info')" id="nav-info">👤 Account Info</div>
@@ -283,13 +283,14 @@
             document.getElementById('display-email').textContent = u.email;
             document.getElementById('inp-fullname').value = u.full_name || '';
             document.getElementById('inp-email').value = u.email || '';
-            document.getElementById('plan-badge').textContent = `🎬 ${u.plan_name || 'Free'}`;
+            document.getElementById('access-badge').textContent = 'Free Access';
             document.getElementById('avatar-img').src = u.profiles?.[0]?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`;
         } catch(e) {
             document.getElementById('display-name').textContent = user.fullName || 'User';
             document.getElementById('display-email').textContent = user.email || '';
             document.getElementById('inp-fullname').value = user.fullName || '';
             document.getElementById('inp-email').value = user.email || '';
+            document.getElementById('access-badge').textContent = 'Free Access';
         }
 
         // Load saved settings

@@ -215,7 +215,7 @@
                 </div>
                 <div class="user-dropdown">
                     <div class="dropdown-item" style="font-weight:600;color:var(--clr-white)">${user.fullName}</div>
-                    <div class="dropdown-item" style="font-size:0.78rem;color:var(--clr-text-muted)">${user.planName || 'Basic'} Plan</div>
+                    <div class="dropdown-item" style="font-size:0.78rem;color:var(--clr-text-muted)">Free streaming account</div>
                     <div class="dropdown-divider"></div>
                     <a href="/pages/profile.html" class="dropdown-item">👤 My Profile</a>
                     <a href="/pages/watchlist.html" class="dropdown-item">📋 My List</a>
@@ -270,7 +270,14 @@
                 .slice(0, 3)
                 .map(g => `<span class="hero-genre-tag">${g.name}</span>`)
                 .join('');
-            document.getElementById('hero-play-btn').onclick = () => window.location.href = `/pages/player.html?id=${item.id}&autoplay=true`;
+            document.getElementById('hero-play-btn').onclick = () => {
+                if (!auth.isLoggedIn()) {
+                    window.location.href = `/pages/detail.html?id=${item.id}`;
+                    return;
+                }
+
+                window.location.href = `/pages/player.html?id=${item.id}&autoplay=true`;
+            };
             document.getElementById('hero-info-btn').onclick = () => openDetail(item.id);
             document.getElementById('hero-watchlist-btn').onclick = (e) => toggleWatchlist(e, item.id);
         }

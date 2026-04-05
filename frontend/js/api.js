@@ -1,8 +1,10 @@
 // SEEN POINT Frontend Configuration
-// For production: replace with your Render.com backend URL
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5000/api'
-    : 'https://your-render-backend.onrender.com/api';
+const API_BASE = window.__API_BASE__
+    || localStorage.getItem('seenpoint_api_base')
+    || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000/api'
+        : `${window.location.origin.replace(/\/$/, '')}/api`);
+const API_ORIGIN = API_BASE.replace(/\/api$/, '');
 const WS_URL = API_BASE.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '');
 
 // ─── API CLIENT ──────────────────────────────────────────────────────────────
@@ -81,6 +83,11 @@ const auth = {
         localStorage.removeItem('cv_user');
         localStorage.removeItem('cv_profile');
         window.location.href = '/pages/login.html';
+    },
+
+    requireLogin(returnTo = window.location.pathname + window.location.search) {
+        const encoded = encodeURIComponent(returnTo);
+        window.location.href = `/pages/login.html?returnTo=${encoded}`;
     }
 };
 
@@ -284,6 +291,11 @@ function openDetail(id) {
 
 // Global helper for play button — opens the full video player
 function playContent(id, type) {
+    if (!auth.isLoggedIn()) {
+        window.location.href = `/pages/detail.html?id=${id}`;
+        return;
+    }
+
     window.location.href = `/pages/player.html?id=${id}&autoplay=true`;
 }
 

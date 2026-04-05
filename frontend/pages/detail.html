@@ -371,18 +371,40 @@
         document.getElementById('detail-actions').innerHTML = `
             <button class="btn btn-primary btn-lg" id="play-main-btn">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
-                Play
+                ${user ? 'Watch Full Movie' : 'Login to Watch Full Movie'}
             </button>
             <button class="btn btn-secondary btn-lg watchlist-btn" id="detail-watchlist-btn">
                 + My List
             </button>
-            ${content.trailer_url ? `<a href="${content.trailer_url}" target="_blank" class="btn btn-ghost btn-lg">▶ Trailer</a>` : ''}
+            ${content.trailer_embed_url ? `<a href="/pages/player.html?id=${id}&trailer=true" class="btn btn-ghost btn-lg">▶ Trailer</a>` : ''}
         `;
 
         document.getElementById('play-main-btn').addEventListener('click', () => {
+            if (!user) {
+                auth.requireLogin(`/pages/player.html?id=${id}&autoplay=true`);
+                return;
+            }
+
             window.location.href = `/pages/player.html?id=${id}&autoplay=true`;
         });
         document.getElementById('detail-watchlist-btn').addEventListener('click', (e) => toggleWatchlist(e, id));
+
+        if (!user) {
+            const loginNote = document.createElement('p');
+            loginNote.className = 'watch-note';
+            loginNote.style.marginTop = '10px';
+            loginNote.textContent = 'Guests can watch the trailer only. Login to watch the full movie.';
+            document.getElementById('detail-actions').after(loginNote);
+        }
+
+        if (user && content.playback_error) {
+            const playbackWarning = document.createElement('p');
+            playbackWarning.className = 'watch-note';
+            playbackWarning.style.marginTop = '10px';
+            playbackWarning.style.color = 'var(--clr-warning)';
+            playbackWarning.textContent = content.playback_error;
+            document.getElementById('detail-actions').after(playbackWarning);
+        }
 
         // Info panel
         document.getElementById('detail-info-panel').innerHTML = [

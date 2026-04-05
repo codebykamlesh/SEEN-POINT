@@ -29,6 +29,8 @@ const DUMMY_CONTENT = [
         release_year: 2010, duration_min: 148, maturity_rating: 'PG-13',
         poster_url: 'https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg',
         backdrop_url: 'https://image.tmdb.org/t/p/original/s3TBrRGB1iav7gFOCNx3H31MoES.jpg',
+        trailer_url: 'https://www.youtube.com/watch?v=YoHD9XEInc0',
+        full_video_url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         avg_rating: 8.8, total_views: 125000, total_ratings: 500,
         is_featured: true, language: 'en', tags: ['sci-fi', 'thriller'],
         genres: [{ name: 'Action', slug: 'action' }, { name: 'Sci-Fi', slug: 'sci-fi' }],
@@ -41,6 +43,8 @@ const DUMMY_CONTENT = [
         release_year: 2014, duration_min: 169, maturity_rating: 'PG-13',
         poster_url: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
         backdrop_url: 'https://image.tmdb.org/t/p/original/pbrkL804c8yAv3zBZR4QPEafpAR.jpg',
+        trailer_url: 'https://www.youtube.com/watch?v=zSWdZVtXT7E',
+        full_video_url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
         avg_rating: 8.6, total_views: 110000, total_ratings: 450,
         is_featured: true, language: 'en', tags: ['space', 'science'],
         genres: [{ name: 'Sci-Fi', slug: 'sci-fi' }, { name: 'Drama', slug: 'drama' }],
@@ -53,6 +57,8 @@ const DUMMY_CONTENT = [
         release_year: 2008, duration_min: 152, maturity_rating: 'PG-13',
         poster_url: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
         backdrop_url: 'https://image.tmdb.org/t/p/original/hqkIcbrOHL86UncnHIsHVcVmzue.jpg',
+        trailer_url: 'https://www.youtube.com/watch?v=EXeTwQWrcwY',
+        full_video_url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
         avg_rating: 9.0, total_views: 180000, total_ratings: 700,
         is_featured: false, language: 'en', tags: ['batman', 'action'],
         genres: [{ name: 'Action', slug: 'action' }, { name: 'Crime', slug: 'crime' }],
@@ -65,6 +71,8 @@ const DUMMY_CONTENT = [
         release_year: 2008, duration_min: null, maturity_rating: 'TV-MA',
         poster_url: 'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg',
         backdrop_url: 'https://image.tmdb.org/t/p/original/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg',
+        trailer_url: 'https://www.youtube.com/watch?v=HhesaQXLuRY',
+        full_video_url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
         avg_rating: 9.5, total_views: 310000, total_ratings: 900,
         is_featured: true, language: 'en', tags: ['crime', 'drama'],
         genres: [{ name: 'Crime', slug: 'crime' }, { name: 'Drama', slug: 'drama' }],
@@ -77,6 +85,8 @@ const DUMMY_CONTENT = [
         release_year: 2021, duration_min: 155, maturity_rating: 'PG-13',
         poster_url: 'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg',
         backdrop_url: 'https://image.tmdb.org/t/p/original/eeIStTMhkBmkltpEbcGAiDFmpuD.jpg',
+        trailer_url: 'https://www.youtube.com/watch?v=n9xhKvQKfcg',
+        full_video_url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
         avg_rating: 8.1, total_views: 95000, total_ratings: 380,
         is_featured: true, language: 'en', tags: ['sci-fi', 'epic'],
         genres: [{ name: 'Sci-Fi', slug: 'sci-fi' }, { name: 'Adventure', slug: 'adventure' }],
@@ -89,6 +99,8 @@ const DUMMY_CONTENT = [
         release_year: 2019, duration_min: 132, maturity_rating: 'R',
         poster_url: 'https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
         backdrop_url: 'https://image.tmdb.org/t/p/original/TU9NIjwzjoKPwQHoHshkFcQUCG.jpg',
+        trailer_url: 'https://www.youtube.com/watch?v=5xH0HfJHsaY',
+        full_video_url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
         avg_rating: 8.5, total_views: 92000, total_ratings: 360,
         is_featured: false, language: 'ko', tags: ['korean', 'drama'],
         genres: [{ name: 'Thriller', slug: 'thriller' }, { name: 'Drama', slug: 'drama' }],
@@ -110,6 +122,130 @@ const DUMMY_GENRES = [
 
 function isEmpty(rows) {
     return !rows || rows.length === 0;
+}
+
+function extractYouTubeVideoId(value) {
+    if (!value) return null;
+
+    const trimmed = value.trim();
+    const directIdMatch = trimmed.match(/^[A-Za-z0-9_-]{11}$/);
+    if (directIdMatch) return trimmed;
+
+    try {
+        const url = new URL(trimmed);
+        if (url.hostname.includes('youtu.be')) {
+            return url.pathname.replace('/', '').trim() || null;
+        }
+
+        if (url.hostname.includes('youtube.com')) {
+            return url.searchParams.get('v')
+                || url.pathname.split('/').filter(Boolean).pop()
+                || null;
+        }
+    } catch {
+        return null;
+    }
+
+    return null;
+}
+
+function buildYouTubeEmbedUrl(value, autoplay = false) {
+    const videoId = extractYouTubeVideoId(value);
+    if (!videoId) return null;
+
+    const params = new URLSearchParams({
+        autoplay: autoplay ? '1' : '0',
+        rel: '0',
+        modestbranding: '1',
+    });
+
+    return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+}
+
+function normalizePlaybackSource(content) {
+    if (content.onedrive_file_id) {
+        return {
+            kind: 'onedrive',
+            src: `/api/onedrive/stream/${content.onedrive_file_id}`,
+            sourceType: 'onedrive',
+            fileId: content.onedrive_file_id,
+        };
+    }
+
+    if (!content.full_video_url) {
+        console.error(`[playback] Missing full_video_url for content_id=${content.id || 'unknown'}`);
+        return null;
+    }
+
+    const normalizedSourceType = content.source_type || 'public_domain';
+    const fullUrl = String(content.full_video_url).trim();
+    const youtubeId = extractYouTubeVideoId(fullUrl);
+
+    if (normalizedSourceType === 'youtube' || youtubeId) {
+        console.error(`[playback] Invalid full movie source for content_id=${content.id || 'unknown'}: full playback cannot use YouTube embeds`);
+        return null;
+    }
+
+    return {
+        kind: 'html5',
+        src: fullUrl,
+        sourceType: normalizedSourceType,
+        fileId: null,
+    };
+}
+
+function buildPlaybackData(content, isAuthenticated) {
+    const trailerEmbedUrl = buildYouTubeEmbedUrl(content.trailer_url, true);
+    const fullPlaybackSource = normalizePlaybackSource(content);
+    const access = {
+        isAuthenticated,
+        canWatchFull: isAuthenticated,
+        requiresLogin: !isAuthenticated,
+        loginMessage: 'Login to watch full movie',
+    };
+
+    if (!isAuthenticated) {
+        return {
+            access,
+            trailer_embed_url: trailerEmbedUrl,
+            playback: trailerEmbedUrl
+                ? { kind: 'youtube', src: trailerEmbedUrl, label: 'Trailer' }
+                : null,
+            playback_error: trailerEmbedUrl ? null : 'Trailer is not configured for this title.',
+            stream_url: null,
+            full_video_url: null,
+            stream_path: null,
+            full_playback_source: null,
+        };
+    }
+
+    if (!fullPlaybackSource) {
+        return {
+            access,
+            trailer_embed_url: trailerEmbedUrl,
+            playback: null,
+            playback_error: 'Full movie source is missing or invalid for this title.',
+            stream_url: null,
+            full_video_url: null,
+            stream_path: null,
+            full_playback_source: null,
+        };
+    }
+
+    return {
+        access,
+        trailer_embed_url: trailerEmbedUrl,
+        playback: { kind: 'html5', src: fullPlaybackSource.src, label: 'Full Movie' },
+        playback_error: null,
+        stream_url: fullPlaybackSource.src,
+        full_video_url: fullPlaybackSource.kind === 'html5' ? fullPlaybackSource.src : null,
+        stream_path: fullPlaybackSource.kind === 'onedrive' ? fullPlaybackSource.src : null,
+        full_playback_source: {
+            kind: fullPlaybackSource.kind,
+            source_type: fullPlaybackSource.sourceType,
+            onedrive_file_id: fullPlaybackSource.fileId,
+        },
+    };
 }
 
 // ─── GET /api/content ─────────────────────────────────────────────────────────
@@ -443,6 +579,7 @@ const getFeatured = asyncHandler(async (req, res) => {
 
 const getContentById = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const isAuthenticated = !!req.user;
 
     // Basic UUID validation
     if (!/^[0-9a-f-]{36}$/i.test(id)) {
@@ -469,7 +606,19 @@ const getContentById = asyncHandler(async (req, res) => {
             // Check dummy data
             const dummy = DUMMY_CONTENT.find(c => c.id === id);
             if (dummy) {
-                return res.json({ success: true, data: { ...dummy, cast: [], seasons: [], reviews: [], similar: DUMMY_CONTENT.slice(0, 4) } });
+                return res.json({
+                    success: true,
+                    data: {
+                        ...dummy,
+                        ...buildPlaybackData(dummy, isAuthenticated),
+                        qualities: [],
+                        subtitles: [],
+                        cast: [],
+                        seasons: [],
+                        reviews: [],
+                        similar: DUMMY_CONTENT.slice(0, 4),
+                    }
+                });
             }
             throw createError('Content not found', 404);
         }
@@ -477,7 +626,7 @@ const getContentById = asyncHandler(async (req, res) => {
         const content = contentResult.rows[0];
 
         // Parallel fetches for related data
-        const [castResult, reviewsResult, similarResult, seasonsResult] = await Promise.all([
+        const [castResult, reviewsResult, similarResult, seasonsResult, qualitiesResult, subtitlesResult] = await Promise.all([
             query(
                 `SELECT p.id, p.name, p.photo_url, p.birth_date,
                          cc.role, cc.character, cc.billing_order
@@ -519,13 +668,31 @@ const getContentById = asyncHandler(async (req, res) => {
                     [id]
                   )
                 : { rows: [] },
+            isAuthenticated
+                ? query(
+                    `SELECT quality, onedrive_file_id
+                     FROM video_qualities
+                     WHERE content_id = $1
+                     ORDER BY quality DESC`,
+                    [id]
+                ).catch(() => ({ rows: [] }))
+                : { rows: [] },
+            query(
+                `SELECT language, file_url
+                 FROM subtitle_files
+                 WHERE content_id = $1
+                 ORDER BY language ASC`,
+                [id]
+            ).catch(() => ({ rows: [] })),
         ]);
 
         res.json({
             success: true,
             data: {
                 ...content,
-                stream_url: content.onedrive_file_id ? `/api/onedrive/stream/${content.onedrive_file_id}` : null,
+                ...buildPlaybackData(content, isAuthenticated),
+                qualities: qualitiesResult.rows,
+                subtitles: subtitlesResult.rows,
                 cast:    castResult.rows,
                 seasons: seasonsResult.rows,
                 reviews: reviewsResult.rows,
@@ -538,7 +705,16 @@ const getContentById = asyncHandler(async (req, res) => {
             if (dummy) {
                 return res.json({
                     success: true,
-                    data: { ...dummy, cast: [], seasons: [], reviews: [], similar: DUMMY_CONTENT.slice(0, 4) },
+                    data: {
+                        ...dummy,
+                        ...buildPlaybackData(dummy, isAuthenticated),
+                        qualities: [],
+                        subtitles: [],
+                        cast: [],
+                        seasons: [],
+                        reviews: [],
+                        similar: DUMMY_CONTENT.slice(0, 4),
+                    },
                     _fallback: true,
                 });
             }

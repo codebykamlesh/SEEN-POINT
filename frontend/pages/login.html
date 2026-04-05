@@ -143,8 +143,10 @@
 
     <script src="../js/api.js"></script>
     <script>
+    const returnTo = new URLSearchParams(window.location.search).get('returnTo') || '/index.html';
+
     // Redirect if already logged in
-    if (auth.isLoggedIn()) window.location.href = '/index.html';
+    if (auth.isLoggedIn()) window.location.href = returnTo;
 
     let userEmail = '';
     let cooldownInterval = null;
@@ -249,7 +251,7 @@
             } catch { /* optional */ }
 
             utils.toast('Welcome, ' + user.fullName.split(' ')[0] + '! 🎬', 'success');
-            setTimeout(() => window.location.href = '/index.html', 800);
+            setTimeout(() => window.location.href = returnTo, 800);
         } catch (err) {
             errDiv.textContent = err.message || 'Invalid or expired code. Try again.';
             errDiv.classList.remove('hidden');
@@ -293,7 +295,7 @@
                 if (profiles && profiles.length > 0) auth.saveProfile(profiles[0]);
             } catch {}
             utils.toast('Welcome back, ' + user.fullName.split(' ')[0] + '! 🎬', 'success');
-            setTimeout(() => window.location.href = '/index.html', 800);
+            setTimeout(() => window.location.href = returnTo, 800);
         } catch (err) {
             errBanner.textContent = err.message || 'Invalid credentials.';
             errBanner.classList.remove('hidden');

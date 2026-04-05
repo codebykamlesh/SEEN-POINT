@@ -1,7 +1,7 @@
 /**
  * Email Service — Nodemailer + Gmail SMTP
  * ----------------------------------------
- * Sends OTP verification emails with a premium HTML template.
+ * Sends OTP verification emails with a styled HTML template.
  * 
  * Required .env:
  *   SMTP_EMAIL=your@gmail.com

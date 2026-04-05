@@ -1260,6 +1260,14 @@ input, textarea, select { font-family: inherit; }
 }
 
 /* ─── RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .navbar { padding: 0 var(--space-lg); }
+  .hero-content { max-width: 560px; }
+  .admin-sidebar { width: 220px; }
+  .admin-main { margin-left: 220px; }
+  .content-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+
 @media (max-width: 768px) {
   :root { --navbar-h: 60px; }
   .navbar { padding: 0 var(--space-md); }

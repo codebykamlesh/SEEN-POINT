@@ -113,9 +113,9 @@ To enable OTP email delivery:
 | Role  | Email                 | Password     | Notes |
 |-------|-----------------------|--------------|-------|
 | Admin | `admin@seenpoint.com` | `Admin@123`  | Full dashboard access |
-| User  | `alice@example.com`   | `User@1234`  | Premium plan |
-| User  | `bob@example.com`     | `User@1234`  | Standard plan |
-| User  | `carol@example.com`   | `User@1234`  | Basic plan |
+| User  | `alice@example.com`   | `User@1234`  | Free access |
+| User  | `bob@example.com`     | `User@1234`  | Free access |
+| User  | `carol@example.com`   | `User@1234`  | Free access |
 
 > **Note:** You can also login via OTP with any email address — a new account is auto-created on first verification.
 
@@ -161,7 +161,7 @@ SEEN POINT/
 │   ├── index.html                       # Home page — hero + content rows
 │   ├── pages/
 │   │   ├── login.html                   # OTP login + password fallback
-│   │   ├── register.html                # Sign up + plan selection
+│   │   ├── register.html                # Sign up for free access
 │   │   ├── browse.html                  # Browse all with filters
 │   │   ├── search.html                  # Full-text search + autocomplete
 │   │   ├── detail.html                  # Movie/show detail + metadata

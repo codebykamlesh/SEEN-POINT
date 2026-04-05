@@ -7,17 +7,28 @@
 
 const jwt = require('jsonwebtoken');
 
+const extractToken = (req) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.split(' ')[1];
+    }
+
+    if (typeof req.query.token === 'string' && req.query.token.trim()) {
+        return req.query.token.trim();
+    }
+
+    return null;
+};
+
 /**
  * Middleware: require a valid JWT token
  */
 const authenticate = (req, res, next) => {
-    // Extract token from Authorization header: "Bearer <token>"
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = extractToken(req);
+    if (!token) {
         return res.status(401).json({ success: false, message: 'No token provided' });
     }
 
-    const token = authHeader.split(' ')[1];
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded; // { id, email, isAdmin }
@@ -46,12 +57,12 @@ const requireAdmin = (req, res, next) => {
  * Useful for public routes that have extra features for logged-in users
  */
 const optionalAuthenticate = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = extractToken(req);
+    if (!token) {
         req.user = null;
         return next();
     }
-    const token = authHeader.split(' ')[1];
+
     try {
         req.user = jwt.verify(token, process.env.JWT_SECRET);
     } catch {
